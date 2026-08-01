@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-01T12:59:45.096Z",
+  "generated_at": "2026-08-01T13:58:53.546Z",
   "freeplane_version": "1.13.3",
   "freeplane_build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822",
-  "addon_version": "0.4.0",
+  "addon_version": "0.5.0",
   "protocol_revision": "2025-11-25",
   "capabilities": [
     {
@@ -13,7 +13,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.1.status_latency",
         "v0.1.bridge_degradation"
@@ -26,7 +26,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.1.six_tool_inventory"
       ]
@@ -38,7 +38,7 @@
       "route": "public_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.1.read_5000",
         "v0.1.live_unsaved_read",
@@ -52,7 +52,7 @@
       "route": "public_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.1.scopes_pagination",
         "v0.1.ordered_attributes"
@@ -65,7 +65,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -79,7 +79,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.3.research_map_35_33",
         "v0.3.undo_redo",
@@ -93,7 +93,7 @@
       "route": "internal_api",
       "risk": "confirm",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.4.lifecycle_roundtrip",
         "v0.4.file_conflict_confirmation"
@@ -106,7 +106,7 @@
       "route": "internal_api",
       "risk": "confirm",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.4.export_four_formats",
         "v0.4.artifact_atomic_commit"
@@ -115,28 +115,27 @@
     {
       "capability_id": "presentation.navigate",
       "scope": "gui",
-      "status": "needs_validation",
-      "route": "menu",
+      "status": "verified_gui",
+      "route": "gui",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.0a-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
-        "StartPresentationAction",
-        "StopPresentationAction",
-        "ShowNextSlideAction",
-        "ShowPreviousSlideAction"
+        "v0.5.bilingual_presentation",
+        "v0.5.bridge_state_readback"
       ]
     },
     {
       "capability_id": "print.preview",
       "scope": "gui",
-      "status": "needs_validation",
-      "route": "menu",
+      "status": "verified_gui",
+      "route": "gui",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.0a-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
-        "PrintPreviewAction"
+        "v0.5.bilingual_print_preview",
+        "v0.5.dialog_cancel_readback"
       ]
     },
     {
@@ -146,7 +145,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.1.event_p95",
         "v0.1.cursor_resync",
@@ -160,7 +159,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -174,7 +173,7 @@
       "route": "public_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.1.live_map_inventory"
       ]
@@ -186,7 +185,7 @@
       "route": "public_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.1.selection_scope"
       ]
@@ -198,7 +197,7 @@
       "route": "public_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.1.structured_literal_search"
       ]
@@ -210,7 +209,7 @@
       "route": "file",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.1.xml_security_matrix",
         "v0.1.explicit_file_authority"
@@ -223,7 +222,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -237,7 +236,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -251,7 +250,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -265,7 +264,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -279,7 +278,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -293,7 +292,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -307,7 +306,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -321,7 +320,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -335,7 +334,7 @@
       "route": "internal_api",
       "risk": "confirm",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -349,7 +348,7 @@
       "route": "internal_api",
       "risk": "confirm",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -363,7 +362,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.2.atomic_readback",
         "v0.2.undo_redo",
@@ -377,7 +376,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.3.research_map_35_33",
         "v0.3.undo_redo",
@@ -391,7 +390,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.3.research_map_35_33",
         "v0.3.undo_redo",
@@ -405,7 +404,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.3.research_map_35_33",
         "v0.3.undo_redo",
@@ -419,7 +418,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.3.research_map_35_33",
         "v0.3.undo_redo",
@@ -433,7 +432,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.3.research_map_35_33",
         "v0.3.undo_redo",
@@ -447,7 +446,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.3.research_map_35_33",
         "v0.3.undo_redo",
@@ -461,7 +460,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.3.research_map_35_33",
         "v0.3.undo_redo",
@@ -475,7 +474,7 @@
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.3.research_map_35_33",
         "v0.3.undo_redo",
@@ -489,7 +488,7 @@
       "route": "public_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.3.research_map_35_33",
         "v0.3.undo_redo",
@@ -503,7 +502,7 @@
       "route": "internal_api",
       "risk": "blocked",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.3-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "Executable conditional-style expressions are intentionally unavailable"
       ]
@@ -515,7 +514,7 @@
       "route": "internal_api",
       "risk": "blocked",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.3-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "Reminder scripts are intentionally unavailable"
       ]
@@ -527,7 +526,7 @@
       "route": "file",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "v0.4.lexical_writeback",
         "v0.4.unknown_xml_xattr_backup"
@@ -540,9 +539,57 @@
       "route": "public_api",
       "risk": "blocked",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.4-ff6dab76e60a",
+      "qualification_report": "v0.5-ff6dab76e60a",
       "evidence": [
         "SECURE_INPUT_UNAVAILABLE: ordinary MCP parameters cannot carry node-encryption passwords"
+      ]
+    },
+    {
+      "capability_id": "map.import.modal",
+      "scope": "gui",
+      "status": "unsupported",
+      "route": "gui",
+      "risk": "blocked",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.5-ff6dab76e60a",
+      "evidence": [
+        "Destructive modal imports lack a qualified deterministic postcondition"
+      ]
+    },
+    {
+      "capability_id": "map.encryption",
+      "scope": "gui",
+      "status": "unsupported",
+      "route": "gui",
+      "risk": "blocked",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.5-ff6dab76e60a",
+      "evidence": [
+        "No qualified secure secret-input channel exists"
+      ]
+    },
+    {
+      "capability_id": "print.final",
+      "scope": "gui",
+      "status": "unsupported",
+      "route": "gui",
+      "risk": "blocked",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.5-ff6dab76e60a",
+      "evidence": [
+        "Final printer submission requires per-operation interactive confirmation"
+      ]
+    },
+    {
+      "capability_id": "preferences.modal",
+      "scope": "gui",
+      "status": "unsupported",
+      "route": "gui",
+      "risk": "blocked",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.5-ff6dab76e60a",
+      "evidence": [
+        "No high-value preference workflow passed the bilingual modal gate"
       ]
     }
   ]

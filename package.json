@@ -1,6 +1,6 @@
 {
   "name": "freeplane-mcp",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -14,17 +14,19 @@
   "scripts": {
     "bootstrap": "node scripts/bootstrap_dev.mjs",
     "build:addon": "node scripts/build_addon.mjs",
+    "build:helper": "node scripts/build_ax_helper.mjs",
     "build": "tsc -b",
     "clean": "tsc -b --clean",
-    "test": "npm run build && npm run test:compiled",
+    "test": "npm run build:helper && npm run build && npm run test:compiled",
     "test:addon": "node scripts/build_addon.mjs",
-    "test:compiled": "node --test packages/protocol/dist/index.test.js packages/server/dist/artifactSafety.test.js packages/server/dist/fileFallback.test.js packages/server/dist/probe.test.js packages/server/dist/writeSafety.test.js packages/server/dist/mcp.test.js",
+    "test:compiled": "node --test packages/protocol/dist/index.test.js packages/server/dist/artifactSafety.test.js packages/server/dist/axHelper.test.js packages/server/dist/fileFallback.test.js packages/server/dist/probe.test.js packages/server/dist/writeSafety.test.js packages/server/dist/mcp.test.js",
     "qualify:v0.0a": "npm run build && node packages/server/dist/cli.js probe && npm run test:compiled",
     "qualify:v0.0b": "node scripts/qualify_v0_0b.mjs",
     "qualify:v0.1": "node scripts/qualify_v0_1.mjs",
     "qualify:v0.2": "node scripts/qualify_v0_2.mjs",
     "qualify:v0.3": "node scripts/qualify_v0_3.mjs",
     "qualify:v0.4": "node scripts/qualify_v0_4.mjs",
+    "qualify:v0.5": "node scripts/qualify_v0_5.mjs",
     "start": "node packages/server/dist/index.js"
   },
   "devDependencies": {

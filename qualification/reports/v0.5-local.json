@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "stage": "v0.5",
+  "generated_at": "2026-08-01T13:59:04.225Z",
+  "passed": true,
+  "qualification_report": "v0.5-ff6dab76e60a",
+  "freeplane": {
+    "version": "1.13.3",
+    "build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822"
+  },
+  "addon_version": "0.5.0",
+  "server_version": "0.5.0",
+  "helper_version": "0.5.0",
+  "inherited_qualification_reports": [
+    {
+      "stage": "v0.4",
+      "qualification_report": "v0.4-ff6dab76e60a",
+      "sha256": "dde1cbc0930a1240ddfb38b94ef08e8dccd3fbf133835f16f4d30d625ebeecda"
+    }
+  ],
+  "checks": [
+    {
+      "id": "build.candidate",
+      "status": "pass",
+      "evidence": "TypeScript tests, Java self-test, Swift self-test, and ad-hoc code-signature verification passed"
+    },
+    {
+      "id": "preservation.v0.4_gate_inherited",
+      "status": "pass",
+      "evidence": "v0.4 report dde1cbc0930a1240ddfb38b94ef08e8dccd3fbf133835f16f4d30d625ebeecda remains the document/export evidence base"
+    },
+    {
+      "id": "en.isolation_identity",
+      "status": "pass",
+      "evidence": "en uses a distinct isolated 0.5.0 bridge"
+    },
+    {
+      "id": "en.twelve_tool_surface",
+      "status": "pass",
+      "evidence": "en exposes the exact twelve-tool surface"
+    },
+    {
+      "id": "en.qualified_identity",
+      "status": "pass",
+      "evidence": "en server, bridge, manifest, and granted signed helper identity agree"
+    },
+    {
+      "id": "en.presentation_fixture",
+      "status": "pass",
+      "evidence": "en isolated map has one two-slide presentation"
+    },
+    {
+      "id": "en.dry_run_no_focus",
+      "status": "pass",
+      "evidence": "en dry-run ok=true, code=none, message=none, locale=en, effect=planned, menu_resolution=deferred_until_focus, resolved_titles=[\"Navigate\",\"Presentation\",\"Run presentation\"], before=false, after=false, observed_frontmost_pid=720, isolated_pid=61944"
+    },
+    {
+      "id": "en.dry_run_zero_effect",
+      "status": "pass",
+      "evidence": "en MCP dry-run has zero map, view, presentation, preview, or focus effect"
+    },
+    {
+      "id": "en.focus_recovery_start",
+      "status": "pass",
+      "evidence": "en recovered Freeplane focus and verified presentation start"
+    },
+    {
+      "id": "en.idempotent_replay",
+      "status": "pass",
+      "evidence": "en repeated action key/payload replays the persisted verified envelope"
+    },
+    {
+      "id": "en.presentation_navigation",
+      "status": "pass",
+      "evidence": "en next, previous, last, first, and stop each passed bridge state readback"
+    },
+    {
+      "id": "en.preview_open_cancel",
+      "status": "pass",
+      "evidence": "en print preview opened by localized AX menu and closed through its AX close button"
+    },
+    {
+      "id": "en.policy_and_revision",
+      "status": "pass",
+      "evidence": "en stale revisions and arbitrary action/menu/coordinate/final-print inputs are rejected with zero GUI effect"
+    },
+    {
+      "id": "en.content_unchanged",
+      "status": "pass",
+      "evidence": "en presentation and preview actions did not mutate map content"
+    },
+    {
+      "id": "en.private_logs",
+      "status": "pass",
+      "evidence": "en logs contain neither bridge token nor presentation name"
+    },
+    {
+      "id": "zh_CN.isolation_identity",
+      "status": "pass",
+      "evidence": "zh_CN uses a distinct isolated 0.5.0 bridge"
+    },
+    {
+      "id": "zh_CN.twelve_tool_surface",
+      "status": "pass",
+      "evidence": "zh_CN exposes the exact twelve-tool surface"
+    },
+    {
+      "id": "zh_CN.qualified_identity",
+      "status": "pass",
+      "evidence": "zh_CN server, bridge, manifest, and granted signed helper identity agree"
+    },
+    {
+      "id": "zh_CN.presentation_fixture",
+      "status": "pass",
+      "evidence": "zh_CN isolated map has one two-slide presentation"
+    },
+    {
+      "id": "zh_CN.dry_run_no_focus",
+      "status": "pass",
+      "evidence": "zh_CN dry-run ok=true, code=none, message=none, locale=zh_CN, effect=planned, menu_resolution=deferred_until_focus, resolved_titles=[\"导航\",\"演示\",\"开始演示\"], before=false, after=false, observed_frontmost_pid=720, isolated_pid=61993"
+    },
+    {
+      "id": "zh_CN.dry_run_zero_effect",
+      "status": "pass",
+      "evidence": "zh_CN MCP dry-run has zero map, view, presentation, preview, or focus effect"
+    },
+    {
+      "id": "zh_CN.focus_recovery_start",
+      "status": "pass",
+      "evidence": "zh_CN recovered Freeplane focus and verified presentation start"
+    },
+    {
+      "id": "zh_CN.idempotent_replay",
+      "status": "pass",
+      "evidence": "zh_CN repeated action key/payload replays the persisted verified envelope"
+    },
+    {
+      "id": "zh_CN.presentation_navigation",
+      "status": "pass",
+      "evidence": "zh_CN next, previous, last, first, and stop each passed bridge state readback"
+    },
+    {
+      "id": "zh_CN.preview_open_cancel",
+      "status": "pass",
+      "evidence": "zh_CN print preview opened by localized AX menu and closed through its AX close button"
+    },
+    {
+      "id": "zh_CN.policy_and_revision",
+      "status": "pass",
+      "evidence": "zh_CN stale revisions and arbitrary action/menu/coordinate/final-print inputs are rejected with zero GUI effect"
+    },
+    {
+      "id": "zh_CN.content_unchanged",
+      "status": "pass",
+      "evidence": "zh_CN presentation and preview actions did not mutate map content"
+    },
+    {
+      "id": "zh_CN.private_logs",
+      "status": "pass",
+      "evidence": "zh_CN logs contain neither bridge token nor presentation name"
+    },
+    {
+      "id": "policy.explicit_gui_cuts",
+      "status": "pass",
+      "evidence": "destructive imports, map encryption, final printing, and preferences remain explicitly unavailable"
+    },
+    {
+      "id": "isolation.user_process_preserved",
+      "status": "pass",
+      "evidence": "pre-existing Freeplane PIDs preserved exactly: 43117"
+    }
+  ],
+  "hard_gate": {
+    "exact_tool_surface": true,
+    "signed_accessibility_helper": true,
+    "bilingual_menu_resolution": true,
+    "focus_recovery": true,
+    "presentation_readback": true,
+    "dialog_cancel_readback": true,
+    "policy_rejection": true,
+    "zero_content_mutation": true,
+    "explicit_gui_cuts": true,
+    "user_process_preserved": true
+  }
+}

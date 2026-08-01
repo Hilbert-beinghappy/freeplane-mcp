@@ -14,6 +14,7 @@ const EXPECTED_TOOLS = [
   "freeplane_document",
   "freeplane_export",
   "freeplane_history",
+  "freeplane_invoke_action",
   "freeplane_list_maps",
   "freeplane_read",
   "freeplane_search",

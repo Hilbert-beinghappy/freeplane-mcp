@@ -7,6 +7,7 @@ import {
   DocumentInputSchema,
   ERROR_CATEGORIES,
   ExportInputSchema,
+  InvokeActionInputSchema,
   ReadInputSchema,
   ResponseEnvelopeSchema,
   SearchInputSchema,
@@ -168,5 +169,35 @@ test("v0.4 document and export contracts keep paths, revisions, and formats expl
     destination: "/tmp/map.docx",
     expected_content_revision: 4,
     idempotency_key,
+  }).success, false);
+});
+
+test("v0.5 GUI contract accepts only project-owned capability and action enums", () => {
+  const common = {
+    map_id: "map",
+    expected_content_revision: 4,
+    expected_view_revision: 2,
+    idempotency_key: "a8bfce4e-9f3d-4d5d-a63a-c37f4b993202",
+  };
+  assert.equal(InvokeActionInputSchema.safeParse({
+    ...common,
+    capability_id: "presentation.navigate",
+    action: "next",
+  }).success, true);
+  assert.equal(InvokeActionInputSchema.safeParse({
+    ...common,
+    capability_id: "print.preview",
+    action: "close",
+  }).success, true);
+  assert.equal(InvokeActionInputSchema.safeParse({
+    ...common,
+    capability_id: "arbitrary.menu",
+    action: "PrintAction",
+  }).success, false);
+  assert.equal(InvokeActionInputSchema.safeParse({
+    ...common,
+    capability_id: "print.preview",
+    action: "print",
+    menu_path: ["File", "Print"],
   }).success, false);
 });

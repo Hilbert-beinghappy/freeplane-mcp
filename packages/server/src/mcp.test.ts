@@ -19,6 +19,7 @@ const EXPECTED_TOOLS = [
   "freeplane_document",
   "freeplane_export",
   "freeplane_history",
+  "freeplane_invoke_action",
   "freeplane_list_maps",
   "freeplane_read",
   "freeplane_search",
@@ -34,7 +35,7 @@ test("bridge response streaming stops at the configured byte ceiling", async () 
   );
 });
 
-test("stdio handshake is pinned, clean, and exposes only qualified v0.4 tools", async () => {
+test("stdio handshake is pinned, clean, and exposes only qualified v0.5 tools", async () => {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.resolve("packages/server/dist/index.js")],
@@ -72,7 +73,7 @@ test("stdio handshake is pinned, clean, and exposes only qualified v0.4 tools", 
       qualification_passed?: boolean;
     };
     assert.equal(statusData.degraded, true);
-    assert.match(statusData.qualification_report ?? "", /^v0\.4-/);
+    assert.match(statusData.qualification_report ?? "", /^v0\.5-/);
     assert.equal(statusData.qualification_passed, true);
 
     const capabilities = ResponseEnvelopeSchema.parse((await client.callTool({
@@ -101,6 +102,10 @@ test("stdio handshake is pinned, clean, and exposes only qualified v0.4 tools", 
       true,
     );
     assert.equal(
+      capabilityData.capabilities.find((item) => item.capability_id === "presentation.navigate")?.available_via_mcp,
+      true,
+    );
+    assert.equal(
       capabilityData.capabilities.find((item) => item.capability_id === "node.conditional_style")?.available_via_mcp,
       false,
     );
@@ -111,10 +116,10 @@ test("stdio handshake is pinned, clean, and exposes only qualified v0.4 tools", 
   assert.equal(stderr, "");
 });
 
-test("a v0.4 capability downgrade removes document tools and the version-pass claim", async () => {
+test("a v0.5 GUI capability downgrade removes the action tool and the version-pass claim", async () => {
   const temporary = await mkdtemp(path.join(tmpdir(), "freeplane-mcp-gate-test-"));
   const result = structuredClone(await loadProbeResult());
-  const capability = result.manifest.capabilities.find((item) => item.capability_id === "map.file_write");
+  const capability = result.manifest.capabilities.find((item) => item.capability_id === "presentation.navigate");
   assert.ok(capability);
   capability.status = "needs_validation";
   const server = createFreeplaneMcpServer(result, runtimeOptions(result.manifest, {
@@ -125,7 +130,7 @@ test("a v0.4 capability downgrade removes document tools and the version-pass cl
   }));
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   const client = new Client(
-    { name: "freeplane-mcp-gate-test", version: "0.4.0" },
+    { name: "freeplane-mcp-gate-test", version: "0.5.0" },
     { supportedProtocolVersions: ["2025-11-25"] },
   );
 
@@ -133,8 +138,9 @@ test("a v0.4 capability downgrade removes document tools and the version-pass cl
     await server.connect(serverTransport);
     await client.connect(clientTransport);
     const tools = (await client.listTools()).tools.map((tool) => tool.name);
-    assert.equal(tools.includes("freeplane_document"), false);
-    assert.equal(tools.includes("freeplane_export"), false);
+    assert.equal(tools.includes("freeplane_document"), true);
+    assert.equal(tools.includes("freeplane_export"), true);
+    assert.equal(tools.includes("freeplane_invoke_action"), false);
     const status = ResponseEnvelopeSchema.parse((await client.callTool({
       name: "freeplane_status",
       arguments: {},

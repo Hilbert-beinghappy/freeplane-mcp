@@ -10,6 +10,7 @@ import org.freeplane.api.Node;
 import org.freeplane.api.NodeCondition;
 import org.freeplane.api.NodeChangeListener;
 import org.freeplane.core.ui.CaseSensitiveFileNameExtensionFilter;
+import org.freeplane.core.resources.ResourceController;
 import org.freeplane.features.export.mindmapmode.ExportController;
 import org.freeplane.features.export.mindmapmode.IExportEngine;
 import org.freeplane.features.filter.Filter;
@@ -28,6 +29,7 @@ import org.freeplane.view.swing.map.NodeView;
 
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
+import java.awt.Window;
 import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
@@ -395,6 +397,145 @@ final class MapRegistry implements AutoCloseable {
                 "destination", destination.toString(),
                 "content_revision", state.contentRevision,
                 "view_revision", state.viewRevision);
+    }
+
+    Map<String, Object> guiState(JsonNode request) {
+        assertMainThread();
+        State state = requireState(BridgeSupport.requiredText(request, "map_id"));
+        reconcile(state, "snapshot.reconciled", List.of("gui_precondition"), List.of());
+        reconcileView(state);
+        if (activeStateWithoutRefresh() != state) {
+            throw new BridgeException(409, "SELECTION_CONFLICT", "GUI actions require the requested map to be active");
+        }
+        if (request.has("expected_content_revision")) {
+            long expected = BridgeSupport.requiredNonNegativeLong(request, "expected_content_revision");
+            if (state.contentRevision != expected) {
+                throw new BridgeException(409, "REVISION_CONFLICT", "Map content revision changed", map(
+                        "expected_content_revision", expected,
+                        "actual_content_revision", state.contentRevision));
+            }
+        }
+        if (request.has("expected_view_revision")) {
+            long expected = BridgeSupport.requiredNonNegativeLong(request, "expected_view_revision");
+            if (state.viewRevision != expected) {
+                throw new BridgeException(409, "REVISION_CONFLICT", "Map view revision changed", map(
+                        "expected_view_revision", expected,
+                        "actual_view_revision", state.viewRevision));
+            }
+        }
+        return map(
+                "map_id", state.mapId,
+                "content_revision", state.contentRevision,
+                "view_revision", state.viewRevision,
+                "locale", ResourceController.getResourceController().getLanguageCode(),
+                "presentation", presentationState(state),
+                "print_preview_open", printPreviewOpen());
+    }
+
+    Map<String, Object> qualificationPresentation(String mapId) {
+        assertMainThread();
+        State state = requireState(mapId);
+        if (activeStateWithoutRefresh() != state) {
+            throw new BridgeException(409, "SELECTION_CONFLICT", "Presentation fixture requires the active map");
+        }
+        Object controller = presentationController(state);
+        Object mapPresentations = call(controller, "getPresentations", new Class<?>[]{MapModel.class}, state.model);
+        Object presentations = publicField(mapPresentations, "presentations");
+        if (intCall(presentations, "getSize") != 0) {
+            throw new BridgeException(409, "ACTION_PRECONDITION_FAILED", "Qualification map already contains presentations");
+        }
+        call(presentations, "add", new Class<?>[]{String.class}, "Freeplane MCP qualification");
+        Object presentation = call(presentations, "getCurrentElement", new Class<?>[]{});
+        if (presentation == null) throw new BridgeException(422, "POSTCONDITION_FAILED", "Presentation was not created");
+        Object slides = publicField(presentation, "slides");
+        call(slides, "add", new Class<?>[]{String.class}, "First");
+        Object first = call(slides, "getCurrentElement", new Class<?>[]{});
+        if (first == null) throw new BridgeException(422, "POSTCONDITION_FAILED", "First slide was not created");
+        call(first, "setSelectedNodeIds", new Class<?>[]{Set.class}, Set.of(state.model.getRootNode().getID()));
+        call(slides, "add", new Class<?>[]{String.class}, "Second");
+        Object second = call(slides, "getCurrentElement", new Class<?>[]{});
+        if (second == null) throw new BridgeException(422, "POSTCONDITION_FAILED", "Second slide was not created");
+        call(second, "setSelectedNodeIds", new Class<?>[]{Set.class}, Set.of(state.model.getRootNode().getID()));
+        call(presentations, "selectCurrentElement", new Class<?>[]{int.class}, 0);
+        call(slides, "selectCurrentElement", new Class<?>[]{int.class}, 0);
+        reconcile(state, "map.updated", List.of("presentation"), List.of(state.model.getRootNode().getID()));
+        reconcileView(state);
+        return guiState(BridgeSupport.JSON.createObjectNode().put("map_id", mapId));
+    }
+
+    private Map<String, Object> presentationState(State state) {
+        Object controller = presentationController(state);
+        Object mapPresentations = call(controller, "getPresentations", new Class<?>[]{MapModel.class}, state.model);
+        Object presentations = publicField(mapPresentations, "presentations");
+        Object presentation = call(presentations, "getCurrentElement", new Class<?>[]{});
+        Object slides = presentation == null ? null : publicField(presentation, "slides");
+        var mode = ((AbstractProxy<?>) state.map).getModeController();
+        return map(
+                "running", actionEnabled(mode, "StopPresentationAction"),
+                "presentation_count", intCall(presentations, "getSize"),
+                "presentation_index", intCall(presentations, "getCurrentElementIndex"),
+                "slide_count", slides == null ? 0 : intCall(slides, "getSize"),
+                "slide_index", slides == null ? -1 : intCall(slides, "getCurrentElementIndex"),
+                "can_first", actionEnabled(mode, "ShowFirstSlideAction"),
+                "can_previous", actionEnabled(mode, "ShowPreviousSlideAction"),
+                "can_next", actionEnabled(mode, "ShowNextSlideAction"),
+                "can_last", actionEnabled(mode, "ShowLastSlideAction"));
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private Object presentationController(State state) {
+        if (!(state.map instanceof AbstractProxy<?> proxy)) {
+            throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Presentation controller is unavailable");
+        }
+        try {
+            var mode = proxy.getModeController();
+            Class<?> type = Class.forName(
+                    "org.freeplane.features.presentations.mindmapmode.PresentationController",
+                    true,
+                    mode.getClass().getClassLoader());
+            Object controller = mode.getExtension((Class) type);
+            if (controller == null) throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Presentation controller is unavailable");
+            return controller;
+        } catch (ClassNotFoundException | LinkageError error) {
+            throw new BridgeException(503, "VERSION_UNSUPPORTED", "Presentation controller binding changed");
+        }
+    }
+
+    private Object publicField(Object target, String name) {
+        try {
+            return target.getClass().getField(name).get(target);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            throw new BridgeException(503, "VERSION_UNSUPPORTED", "Presentation field binding changed: " + name);
+        }
+    }
+
+    private Object call(Object target, String name, Class<?>[] parameterTypes, Object... arguments) {
+        try {
+            return target.getClass().getMethod(name, parameterTypes).invoke(target, arguments);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            throw new BridgeException(503, "VERSION_UNSUPPORTED", "Presentation method binding changed: " + name);
+        }
+    }
+
+    private int intCall(Object target, String name) {
+        Object value = call(target, name, new Class<?>[]{});
+        if (!(value instanceof Integer integer)) {
+            throw new BridgeException(503, "VERSION_UNSUPPORTED", "Presentation integer readback changed: " + name);
+        }
+        return integer;
+    }
+
+    private boolean actionEnabled(org.freeplane.features.mode.ModeController mode, String key) {
+        var action = mode.getAction(key);
+        if (action == null) throw new BridgeException(503, "VERSION_UNSUPPORTED", "Presentation action is unavailable: " + key);
+        return action.isEnabled();
+    }
+
+    private boolean printPreviewOpen() {
+        for (Window window : Window.getWindows()) {
+            if (window.isVisible() && window.getClass().getName().equals("org.freeplane.features.print.PreviewDialog")) return true;
+        }
+        return false;
     }
 
     private static void awaitExportArtifact(Path destination) {

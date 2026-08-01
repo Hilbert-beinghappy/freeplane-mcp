@@ -628,6 +628,30 @@ export const ExportInputSchema = z.object({
 
 export type ExportInput = z.infer<typeof ExportInputSchema>;
 
+const InvokeActionFields = {
+  map_id: z.string().min(1).max(512),
+  expected_content_revision: z.int().nonnegative(),
+  expected_view_revision: z.int().nonnegative(),
+  dry_run: z.boolean().default(true),
+  idempotency_key: z.uuid(),
+  confirmation: z.literal(null).default(null),
+} as const;
+
+export const InvokeActionInputSchema = z.discriminatedUnion("capability_id", [
+  z.object({
+    capability_id: z.literal("presentation.navigate"),
+    action: z.enum(["start", "stop", "first", "previous", "next", "last"]),
+    ...InvokeActionFields,
+  }).strict(),
+  z.object({
+    capability_id: z.literal("print.preview"),
+    action: z.enum(["open", "close"]),
+    ...InvokeActionFields,
+  }).strict(),
+]);
+
+export type InvokeActionInput = z.infer<typeof InvokeActionInputSchema>;
+
 export const TOOL_NAMES = [
   "freeplane_status",
   "freeplane_capabilities",

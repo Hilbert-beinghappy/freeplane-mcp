@@ -252,6 +252,26 @@ export class IdempotencyLedger {
     this.target = path.join(runtimeDirectory, "write-state.json");
   }
 
+  replay(key: string, payloadHash: string, bridgeInstanceId: string): Promise<ResponseEnvelope | null> {
+    return this.lock(async () => {
+      await this.load();
+      const existing = this.entries.get(key);
+      if (!existing) return null;
+      if (existing.payload_hash !== payloadHash) {
+        throw new BridgeClientError("IDEMPOTENCY_KEY_REUSED", "Idempotency key was reused with another payload", {}, 409);
+      }
+      if (existing.bridge_instance_id !== bridgeInstanceId || existing.status === "pending" || !existing.result) {
+        throw new BridgeClientError(
+          "IDEMPOTENCY_RECONCILIATION_REQUIRED",
+          "The prior write outcome requires a full read before retry",
+          {},
+          409,
+        );
+      }
+      return existing.result;
+    });
+  }
+
   claim(key: string, payloadHash: string, bridgeInstanceId: string): Promise<ResponseEnvelope | null> {
     return this.lock(async () => {
       await this.load();

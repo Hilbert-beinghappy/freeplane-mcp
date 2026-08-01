@@ -34,7 +34,7 @@ import static org.freeplanemcp.bridge.BridgeSupport.BridgeException;
 import static org.freeplanemcp.bridge.BridgeSupport.map;
 
 public final class FreeplaneBridge implements AutoCloseable {
-    private static final String ADDON_VERSION = "0.4.0";
+    private static final String ADDON_VERSION = "0.5.0";
     private static final String QUALIFIED_BUILD_FINGERPRINT = "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822";
     private static final int REQUESTS_PER_SECOND = 240;
     private static FreeplaneBridge instance;
@@ -265,6 +265,9 @@ public final class FreeplaneBridge implements AutoCloseable {
         if (method.equals("POST") && path.equals("/v1/export")) {
             return onMain(() -> registry.exportMap(body));
         }
+        if (method.equals("POST") && path.equals("/v1/gui-state")) {
+            return onMain(() -> registry.guiState(body));
+        }
         if (method.equals("POST") && path.equals("/v1/transactions/plan")) {
             return onMain(() -> transactions.plan(body));
         }
@@ -316,6 +319,11 @@ public final class FreeplaneBridge implements AutoCloseable {
                 ids.add(nodeId.textValue());
             }
             return onMain(() -> registry.qualificationLayout(mapId, ids));
+        }
+        if (method.equals("POST") && path.equals("/v1/qualification/presentation")) {
+            requireQualification();
+            String mapId = BridgeSupport.requiredText(body, "map_id");
+            return onMain(() -> registry.qualificationPresentation(mapId));
         }
         if (method.equals("POST") && path.equals("/v1/qualification/restart")) {
             requireQualification();

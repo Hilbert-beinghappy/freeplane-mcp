@@ -102,3 +102,12 @@
 - Closed-file writeback accepts only ordinary-node `TEXT` changes on configured files not open in Freeplane. The final gate preserved BOM, comments, namespaces, unknown attributes/elements, xattrs, and every byte outside the selected values while retaining original/candidate/manifest backups.
 - The hostile matrix rejects DTD/XXE, symlinks, and outside-root paths before Freeplane. Node encryption remains `unsupported` because ordinary MCP parameters are not a secure secret-input channel.
 - The final isolated gate passed 26/26 checks and preserved the pre-existing Freeplane PID 43117 exactly.
+
+## v0.5 implementation evidence
+
+- The MCP surface is exactly twelve tools: the v0.4 surface plus one goal-level `freeplane_invoke_action` tool. Its schema accepts only the project-owned `presentation.navigate` and `print.preview` capability/action enums.
+- The minimal ad-hoc-signed Swift helper binds the request to bundle `org.freeplane.launcher`, the bridge-reported PID, an identifiable main window, and exact English or Simplified Chinese AX menu titles. It accepts no raw action key, menu path, AX query, script, shell command, or coordinate.
+- Presentation state is created and read through the in-process bridge. Start, stop, first, previous, next, and last each require revision preconditions and a deterministic bridge postcondition; print preview requires AX window appearance and close-button cancellation readback.
+- macOS global-menu focus changes, hidden background menus, and rendered Chinese mnemonic suffixes were observed directly. The helper now uses system-wide AX focus PID state, selects one path from the authenticated bridge locale, reports background dry-run resolution as deferred, and strips only a terminal one-character mnemonic before actual exact-title comparison.
+- The final bilingual isolated gate passed 30/30 checks. Both locales passed dry-run zero effect, focus recovery, idempotent replay, six presentation transitions, preview open/cancel, stale-revision and arbitrary-input rejection, zero content mutation, private logs, helper signature verification, and exact preservation of Freeplane PID 43117.
+- Destructive imports, node/map encryption, final printing, preferences, and other modal workflows remain explicitly unsupported because no secure input plus deterministic cancellation/postcondition path qualified.
