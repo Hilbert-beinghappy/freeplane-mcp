@@ -17,15 +17,15 @@ Set `FREEPLANE_HOME` or `FREEPLANE_APP` when bundle discovery is not appropriate
 
 Historical gates remain reproducible with `npm run qualify:<version>` for `v0.0a`, `v0.0b`, `v0.1`, `v0.2`, `v0.3`, `v0.4`, and `v0.5`.
 
-## Docker / GHCR deployment
+## Docker deployment
 
-The public image supports `linux/amd64` and `linux/arm64`:
+No prebuilt container is published. Clone the repository and build the image locally for your current platform:
 
 ```bash
-docker pull ghcr.io/hilbert-beinghappy/freeplane-mcp:1.0.0
+git clone https://github.com/Hilbert-beinghappy/freeplane-mcp.git
+cd freeplane-mcp
+docker build -t freeplane-mcp:1.0.0 .
 ```
-
-Use the pinned version tag for deployment. `latest` points to the current stable version.
 
 Freeplane and its bridge add-on continue to run natively on the macOS host. First complete the [local installation](#local-install), launch Freeplane through `freeplane-mcp-freeplane`, and keep Docker Desktop running. Then start the STDIO server with the same macOS UID/GID that owns the private bridge discovery file:
 
@@ -40,7 +40,7 @@ docker run --rm -i \
   -e FREEPLANE_MCP_RUNTIME_DIR=/runtime \
   -e FREEPLANE_MCP_BRIDGE_HOST=host.docker.internal \
   -e "FREEPLANE_MCP_ALLOWED_ROOTS=[\"${FREEPLANE_MCP_HOME}/exports\"]" \
-  ghcr.io/hilbert-beinghappy/freeplane-mcp:1.0.0
+  freeplane-mcp:1.0.0
 ```
 
 An MCP client should run that command with a persistent STDIO pipe. For Codex, replace `501:20` and `/Users/YOU` below with the values from `id -u`, `id -g`, and your home directory:
@@ -56,17 +56,11 @@ args = [
   "-e", "FREEPLANE_MCP_RUNTIME_DIR=/runtime",
   "-e", "FREEPLANE_MCP_BRIDGE_HOST=host.docker.internal",
   "-e", "FREEPLANE_MCP_ALLOWED_ROOTS=[\"/Users/YOU/Library/Application Support/Freeplane-MCP/exports\"]",
-  "ghcr.io/hilbert-beinghappy/freeplane-mcp:1.0.0"
+  "freeplane-mcp:1.0.0"
 ]
 ```
 
 The same-path exports mount lets both the container and host Freeplane verify exported files. The host UID/GID preserves the discovery-file ownership check, and the bridge host override accepts only Docker Desktop's local gateway. The Linux image does not contain Freeplane, the Java add-on, or the macOS Accessibility helper. Presentation navigation and print-preview control therefore remain available only through the native MCP process.
-
-To build the same image from source:
-
-```bash
-docker build -t freeplane-mcp:1.0.0 .
-```
 
 ## Local install
 
@@ -93,4 +87,4 @@ See [v1.0 installation and release boundary](docs/v1.0.md), [compatibility](docs
 
 ## Licensing status
 
-Freeplane MCP is released under the [MIT License](LICENSE). The GHCR image redistributes only the Node MCP process and its locked MIT dependencies; Freeplane remains a separate GPL-2.0 installation. Native macOS artifacts are locally qualified but not notarized. See [third-party notices and distribution boundaries](THIRD_PARTY_NOTICES.md).
+Freeplane MCP is released under the [MIT License](LICENSE). A Docker image built from this repository contains only the Node MCP process and its locked MIT dependencies; Freeplane remains a separate GPL-2.0 installation. Native macOS artifacts are locally qualified but not notarized. See [third-party notices and distribution boundaries](THIRD_PARTY_NOTICES.md).
