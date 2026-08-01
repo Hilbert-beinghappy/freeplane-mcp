@@ -1,4 +1,6 @@
-# Third-party notices and release status
+# Third-party notices and distribution status
+
+Freeplane MCP is released under the MIT License; see `LICENSE`.
 
 The self-contained local installation includes these locked runtime packages:
 
@@ -8,8 +10,8 @@ The self-contained local installation includes these locked runtime packages:
 | `@modelcontextprotocol/core` | 2.0.0 | MIT |
 | `zod` | 4.4.3 | MIT |
 
-Their upstream `LICENSE` files are retained inside the installed package directories. `qualification/sbom.spdx.json` is the generated SPDX 2.3 inventory. Apple system frameworks are referenced by the macOS helper but are not redistributed.
+Their upstream `LICENSE` files are retained inside the installed package directories. `qualification/sbom.spdx.json` is the generated SPDX 2.3 inventory. The public GHCR image contains the Node MCP process, these runtime dependencies, this notice, and the project license. Apple system frameworks are referenced by the macOS helper but are not redistributed.
 
-Freeplane is supplied separately by the user and is not copied into the installation. The Java add-on binds to Freeplane APIs and qualified internal classes. Compatibility with Freeplane's licensing and any corresponding source/distribution obligations still requires written legal review before a formal release.
+Freeplane is GPL-2.0 software supplied separately by the user. It is not copied into the GHCR image. The Java add-on binds to Freeplane APIs and qualified internal classes, but neither its binary nor the macOS Accessibility helper is included in the image.
 
-No license has been selected for the Freeplane MCP project itself. Public source visibility is not a grant of permission to copy, modify, or redistribute it. A formal release is blocked until the owner selects a project license and completes the required Freeplane/add-on legal review, notices, source headers, and notarization decision.
+The owner authorized the MIT-licensed Node MCP image for public distribution on 2026-08-02. A bundled native distribution that includes the Java add-on or macOS helper remains a separate release boundary and still requires Freeplane/add-on license review, complete notices/source obligations, and an explicit notarization decision.

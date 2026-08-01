@@ -1,6 +1,8 @@
 {
   "name": "freeplane-mcp",
   "version": "1.0.0",
+  "license": "MIT",
+  "author": "Hilbert-beinghappy",
   "private": true,
   "type": "module",
   "workspaces": [

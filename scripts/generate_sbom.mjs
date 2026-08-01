@@ -5,6 +5,9 @@ import path from "node:path";
 const root = process.cwd();
 const lock = JSON.parse(await readFile(path.join(root, "package-lock.json"), "utf8"));
 const packageMetadata = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
+if (packageMetadata.license !== "MIT" || packageMetadata.author !== "Hilbert-beinghappy") {
+  throw new Error("Project license metadata must match the public MIT release");
+}
 const dependencyPaths = [
   "node_modules/@modelcontextprotocol/server",
   "node_modules/@modelcontextprotocol/core",
@@ -16,9 +19,9 @@ const packages = [{
   versionInfo: packageMetadata.version,
   downloadLocation: "NOASSERTION",
   filesAnalyzed: false,
-  licenseConcluded: "NOASSERTION",
-  licenseDeclared: "NOASSERTION",
-  copyrightText: "NOASSERTION",
+  licenseConcluded: packageMetadata.license,
+  licenseDeclared: packageMetadata.license,
+  copyrightText: `Copyright (c) 2026 ${packageMetadata.author}`,
 }, ...dependencyPaths.map((packagePath) => {
   const metadata = lock.packages[packagePath];
   if (!metadata?.version || !metadata.resolved || !metadata.integrity) throw new Error(`Lockfile package is incomplete: ${packagePath}`);

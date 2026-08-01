@@ -273,6 +273,7 @@ async function buildStaging(options: InstallOptions, staging: string, app: strin
   await Promise.all([
     copyFile(path.join(source, "packages/protocol/package.json"), path.join(staging, "node_modules/@freeplane-mcp/protocol/package.json")),
     copyFile(path.join(source, "package-lock.json"), path.join(staging, "package-lock.json")),
+    copyFile(path.join(source, "LICENSE"), path.join(staging, "LICENSE")),
     copyFile(path.join(source, "README.md"), path.join(staging, "README.md")),
     copyFile(path.join(source, "SECURITY.md"), path.join(staging, "SECURITY.md")),
     copyFile(path.join(source, "THIRD_PARTY_NOTICES.md"), path.join(staging, "THIRD_PARTY_NOTICES.md")),

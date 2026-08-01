@@ -3,9 +3,9 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "freeplane-mcp-1.0.0",
-  "documentNamespace": "https://github.com/Hilbert-beinghappy/freeplane-mcp/spdx/1.0.0/e1256e6804257e5678eaf631a62cb6a4a23ae0bbde6041b946ec55b6b4ca376a",
+  "documentNamespace": "https://github.com/Hilbert-beinghappy/freeplane-mcp/spdx/1.0.0/080b9a6bf769f1e0eda998b682964cba4b6c0e69dd94e778d012f7bd73f0cdbf",
   "creationInfo": {
-    "created": "2026-08-01T15:00:20.965Z",
+    "created": "2026-08-01T16:12:21.570Z",
     "creators": [
       "Tool: freeplane-mcp/scripts/generate_sbom.mjs"
     ]
@@ -17,9 +17,9 @@
       "versionInfo": "1.0.0",
       "downloadLocation": "NOASSERTION",
       "filesAnalyzed": false,
-      "licenseConcluded": "NOASSERTION",
-      "licenseDeclared": "NOASSERTION",
-      "copyrightText": "NOASSERTION"
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "copyrightText": "Copyright (c) 2026 Hilbert-beinghappy"
     },
     {
       "SPDXID": "SPDXRef-Package--modelcontextprotocol-server",

@@ -18,6 +18,12 @@ RUN npm run build
 FROM node:22-bookworm-slim
 ENV NODE_ENV=production
 WORKDIR /app
+LABEL org.opencontainers.image.title="Freeplane MCP" \
+      org.opencontainers.image.description="Local-first Freeplane MCP server" \
+      org.opencontainers.image.source="https://github.com/Hilbert-beinghappy/freeplane-mcp" \
+      org.opencontainers.image.url="https://github.com/Hilbert-beinghappy/freeplane-mcp" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.licenses="MIT"
 
 COPY package.json package-lock.json .npmrc ./
 COPY packages/protocol/package.json packages/protocol/package.json
@@ -28,6 +34,7 @@ COPY --from=build /app/packages/protocol/dist packages/protocol/dist
 COPY --from=build /app/packages/server/dist packages/server/dist
 COPY qualification/reports/v0.0a-local.json qualification/reports/v0.0a-local.json
 COPY qualification/capabilities/capabilities.json qualification/capabilities/capabilities.json
+COPY LICENSE THIRD_PARTY_NOTICES.md ./
 RUN chmod -R a+rX /app
 
 USER node

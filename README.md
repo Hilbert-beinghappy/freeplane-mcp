@@ -17,28 +17,65 @@ Set `FREEPLANE_HOME` or `FREEPLANE_APP` when bundle discovery is not appropriate
 
 Historical gates remain reproducible with `npm run qualify:<version>` for `v0.0a`, `v0.0b`, `v0.1`, `v0.2`, `v0.3`, `v0.4`, and `v0.5`.
 
-## Docker
+## Docker / GHCR deployment
 
-The image packages the Node MCP process; Freeplane and its bridge add-on continue to run natively on the macOS host.
+The public image supports `linux/amd64` and `linux/arm64`:
 
 ```bash
-docker build -t freeplane-mcp:1.0.0 .
+docker pull ghcr.io/hilbert-beinghappy/freeplane-mcp:1.0.0
+```
+
+Use the pinned version tag for deployment. `latest` points to the current stable version.
+
+Freeplane and its bridge add-on continue to run natively on the macOS host. First complete the [local installation](#local-install), launch Freeplane through `freeplane-mcp-freeplane`, and keep Docker Desktop running. Then start the STDIO server with the same macOS UID/GID that owns the private bridge discovery file:
+
+```bash
+FREEPLANE_MCP_HOME="$HOME/Library/Application Support/Freeplane-MCP"
+mkdir -p "$FREEPLANE_MCP_HOME/exports"
 
 docker run --rm -i \
   --user "$(id -u):$(id -g)" \
-  --mount "type=bind,src=$HOME/Library/Application Support/Freeplane-MCP/runtime,dst=/runtime" \
+  --mount "type=bind,src=${FREEPLANE_MCP_HOME}/runtime,dst=/runtime" \
+  --mount "type=bind,src=${FREEPLANE_MCP_HOME}/exports,dst=${FREEPLANE_MCP_HOME}/exports" \
   -e FREEPLANE_MCP_RUNTIME_DIR=/runtime \
   -e FREEPLANE_MCP_BRIDGE_HOST=host.docker.internal \
-  freeplane-mcp:1.0.0
+  -e "FREEPLANE_MCP_ALLOWED_ROOTS=[\"${FREEPLANE_MCP_HOME}/exports\"]" \
+  ghcr.io/hilbert-beinghappy/freeplane-mcp:1.0.0
 ```
 
-Use that `docker run` invocation as the command and arguments of an STDIO MCP client. The host UID/GID keeps the private discovery file ownership check intact, and the bridge host override accepts only Docker Desktop's local gateway. The macOS Accessibility helper cannot run in this Linux image, so presentation navigation and print-preview control remain available only through the native installation.
+An MCP client should run that command with a persistent STDIO pipe. For Codex, replace `501:20` and `/Users/YOU` below with the values from `id -u`, `id -g`, and your home directory:
+
+```toml
+[mcp_servers.freeplane]
+command = "docker"
+args = [
+  "run", "--rm", "-i",
+  "--user", "501:20",
+  "--mount", "type=bind,src=/Users/YOU/Library/Application Support/Freeplane-MCP/runtime,dst=/runtime",
+  "--mount", "type=bind,src=/Users/YOU/Library/Application Support/Freeplane-MCP/exports,dst=/Users/YOU/Library/Application Support/Freeplane-MCP/exports",
+  "-e", "FREEPLANE_MCP_RUNTIME_DIR=/runtime",
+  "-e", "FREEPLANE_MCP_BRIDGE_HOST=host.docker.internal",
+  "-e", "FREEPLANE_MCP_ALLOWED_ROOTS=[\"/Users/YOU/Library/Application Support/Freeplane-MCP/exports\"]",
+  "ghcr.io/hilbert-beinghappy/freeplane-mcp:1.0.0"
+]
+```
+
+The same-path exports mount lets both the container and host Freeplane verify exported files. The host UID/GID preserves the discovery-file ownership check, and the bridge host override accepts only Docker Desktop's local gateway. The Linux image does not contain Freeplane, the Java add-on, or the macOS Accessibility helper. Presentation navigation and print-preview control therefore remain available only through the native MCP process.
+
+To build the same image from source:
+
+```bash
+docker build -t freeplane-mcp:1.0.0 .
+```
 
 ## Local install
 
-Review the default plan, then apply it explicitly:
+Install Freeplane 1.13.3 and Node.js 22 first. Then clone the repository, bootstrap its locked dependencies, review the default installation plan, and apply it explicitly:
 
 ```bash
+git clone https://github.com/Hilbert-beinghappy/freeplane-mcp.git
+cd freeplane-mcp
+npm run bootstrap
 npm run install:local
 npm run install:local -- --apply
 ```
@@ -56,4 +93,4 @@ See [v1.0 installation and release boundary](docs/v1.0.md), [compatibility](docs
 
 ## Licensing status
 
-This repository is publicly visible, but no project license has been selected. v1.0 is a qualified local build, not a formal redistributable or notarized release. See [third-party notices and remaining legal gate](THIRD_PARTY_NOTICES.md).
+Freeplane MCP is released under the [MIT License](LICENSE). The GHCR image redistributes only the Node MCP process and its locked MIT dependencies; Freeplane remains a separate GPL-2.0 installation. Native macOS artifacts are locally qualified but not notarized. See [third-party notices and distribution boundaries](THIRD_PARTY_NOTICES.md).

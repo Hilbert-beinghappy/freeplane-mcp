@@ -26,4 +26,4 @@ The macOS Accessibility helper is allowlisted, process/bundle/window-bound, loca
 
 Use the private GitHub Security Advisory channel for `Hilbert-beinghappy/freeplane-mcp`. If that channel is unavailable, open a minimal public issue without secrets, map content, exploit payloads, or personal paths and ask for a private contact. Do not attach user maps or bridge discovery files.
 
-No security response SLA is promised while the project remains a local qualified build without a formal licensed release.
+No security response SLA is promised for the v1.0 release.
