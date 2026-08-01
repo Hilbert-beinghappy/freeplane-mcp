@@ -17,6 +17,23 @@ Set `FREEPLANE_HOME` or `FREEPLANE_APP` when bundle discovery is not appropriate
 
 Historical gates remain reproducible with `npm run qualify:<version>` for `v0.0a`, `v0.0b`, `v0.1`, `v0.2`, `v0.3`, `v0.4`, and `v0.5`.
 
+## Docker
+
+The image packages the Node MCP process; Freeplane and its bridge add-on continue to run natively on the macOS host.
+
+```bash
+docker build -t freeplane-mcp:1.0.0 .
+
+docker run --rm -i \
+  --user "$(id -u):$(id -g)" \
+  --mount "type=bind,src=$HOME/Library/Application Support/Freeplane-MCP/runtime,dst=/runtime" \
+  -e FREEPLANE_MCP_RUNTIME_DIR=/runtime \
+  -e FREEPLANE_MCP_BRIDGE_HOST=host.docker.internal \
+  freeplane-mcp:1.0.0
+```
+
+Use that `docker run` invocation as the command and arguments of an STDIO MCP client. The host UID/GID keeps the private discovery file ownership check intact, and the bridge host override accepts only Docker Desktop's local gateway. The macOS Accessibility helper cannot run in this Linux image, so presentation navigation and print-preview control remain available only through the native installation.
+
 ## Local install
 
 Review the default plan, then apply it explicitly:

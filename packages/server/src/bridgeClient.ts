@@ -60,6 +60,7 @@ export type BridgeHealth = z.infer<typeof HealthSchema>;
 
 export interface BridgeConfig {
   runtimeDirectory: string;
+  requestHost: "127.0.0.1" | "host.docker.internal";
   expectedFingerprint: string;
   expectedFreeplaneVersion: string;
   expectedAddonVersion: string | null;
@@ -85,6 +86,7 @@ export class BridgeClient {
     discovery: Discovery,
     private readonly token: string,
     private readonly timeoutMs: number,
+    private readonly requestHost: BridgeConfig["requestHost"],
   ) {
     this.instanceId = discovery.bridge_instance_id;
     const { token: _token, ...safeDiscovery } = discovery;
@@ -94,7 +96,7 @@ export class BridgeClient {
   async request(method: "GET" | "POST", endpoint: string, body?: unknown, timeoutMs = this.timeoutMs): Promise<unknown> {
     let response: Response;
     try {
-      response = await fetch(`http://127.0.0.1:${this.discovery.port}${endpoint}`, {
+      response = await fetch(`http://${this.requestHost}:${this.discovery.port}${endpoint}`, {
         method,
         headers: {
           Authorization: `Bearer ${this.token}`,
@@ -167,10 +169,20 @@ export function bridgeConfig(
   expectedAddonVersion: string | null,
   env: NodeJS.ProcessEnv = process.env,
 ): BridgeConfig {
+  const requestHost = env.FREEPLANE_MCP_BRIDGE_HOST ?? "127.0.0.1";
+  if (requestHost !== "127.0.0.1" && requestHost !== "host.docker.internal") {
+    throw new BridgeClientError(
+      "VALIDATION_ERROR",
+      "FREEPLANE_MCP_BRIDGE_HOST must be 127.0.0.1 or host.docker.internal",
+      {},
+      400,
+    );
+  }
   return {
     runtimeDirectory:
       env.FREEPLANE_MCP_RUNTIME_DIR
       ?? path.join(homedir(), "Library", "Application Support", "Freeplane-MCP", "runtime"),
+    requestHost,
     expectedFingerprint,
     expectedFreeplaneVersion,
     expectedAddonVersion,
@@ -228,12 +240,12 @@ export async function connectBridge(config: BridgeConfig): Promise<{
     || (config.expectedAddonVersion !== null && discovery.addon_version !== config.expectedAddonVersion)
     || Date.parse(discovery.created_at) > Date.now() + 60_000
     || Date.parse(discovery.expires_at) <= Date.now()
-    || !(await pidAlive(discovery.pid))
+    || (config.requestHost === "127.0.0.1" && !(await pidAlive(discovery.pid)))
   ) {
     throw new BridgeClientError("BRIDGE_UNAVAILABLE", "Bridge discovery is stale or incompatible");
   }
 
-  const client = new BridgeClient(discovery, discovery.token, config.timeoutMs);
+  const client = new BridgeClient(discovery, discovery.token, config.timeoutMs, config.requestHost);
   const started = performance.now();
   const health = HealthSchema.safeParse(await client.request("GET", "/v1/health"));
   const latencyMs = performance.now() - started;

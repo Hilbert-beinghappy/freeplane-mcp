@@ -9,7 +9,7 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { StdioClientTransport, getDefaultEnvironment } from "@modelcontextprotocol/client/stdio";
 
 import { runCodexHostProbe } from "./codexProbe.js";
-import { BridgeClientError, readBoundedResponseText } from "./bridgeClient.js";
+import { BridgeClientError, bridgeConfig, readBoundedResponseText } from "./bridgeClient.js";
 import { createFreeplaneMcpServer, loadProbeResult, runtimeOptions } from "./mcp.js";
 
 const EXPECTED_TOOLS = [
@@ -35,11 +35,34 @@ test("bridge response streaming stops at the configured byte ceiling", async () 
   );
 });
 
+test("bridge host override is limited to the Docker Desktop gateway", () => {
+  const config = bridgeConfig("f".repeat(64), "1.13.3", "1.0.0", {});
+  assert.equal(config.requestHost, "127.0.0.1");
+  assert.equal(
+    bridgeConfig("f".repeat(64), "1.13.3", "1.0.0", {
+      FREEPLANE_MCP_BRIDGE_HOST: "host.docker.internal",
+    }).requestHost,
+    "host.docker.internal",
+  );
+  assert.throws(
+    () => bridgeConfig("f".repeat(64), "1.13.3", "1.0.0", {
+      FREEPLANE_MCP_BRIDGE_HOST: "example.com",
+    }),
+    (error: unknown) => error instanceof BridgeClientError && error.category === "VALIDATION_ERROR",
+  );
+});
+
 test("stdio handshake is pinned, clean, and exposes only qualified v1.0 tools", async () => {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.resolve("packages/server/dist/index.js")],
     cwd: process.cwd(),
+    env: {
+      ...getDefaultEnvironment(),
+      FREEPLANE_MCP_RUNTIME_DIR: path.join(tmpdir(), `freeplane-mcp-test-missing-${process.pid}`),
+      FREEPLANE_MCP_FILES: "[]",
+      FREEPLANE_MCP_ALLOWED_ROOTS: "[]",
+    },
     stderr: "pipe",
   });
   let stderr = "";
