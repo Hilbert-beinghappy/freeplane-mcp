@@ -8,7 +8,7 @@ Build the verified GPT Pro consultation package first, then freeze and implement
 
 | Phase | Status | Exit condition |
 |---|---|---|
-| 0. Protect and initialize | complete | New APFS project exists with planning records; no user work overwritten |
+| 0. Protect and initialize | complete | Repository exists at the user-selected project path; no user work overwritten |
 | 1. Audit Freeplane and Codex automation surfaces | complete | Reproducible action/API inventory and cited automation evidence |
 | 2. Build GPT Pro consultation package | complete | Redacted package contains prompt, brief, inventories, architecture, roadmap, tests, and real example |
 | 3. Validate package | complete | Manifest hashes, ZIP test, filename/encoding checks, and content/privacy audit pass |
@@ -25,6 +25,7 @@ Build the verified GPT Pro consultation package first, then freeze and implement
 - Reversible edits may auto-run; destructive/overwriting/encryption/unsaved-close operations require confirmation.
 - Local stability first; open-source publication is a later separately authorized action.
 - v0.0 consultation is a hard gate before implementation.
+- Repository source is stored at `/Volumes/huawei/项目实战/freeplane-mcp`; runtime dependencies and temporary build/test artifacts stay on local APFS because the repository volume is ExFAT.
 
 ## Errors encountered
 

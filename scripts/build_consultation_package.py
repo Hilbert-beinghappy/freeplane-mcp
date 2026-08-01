@@ -151,7 +151,8 @@ def build_environment() -> dict:
         "node": run_text("node", "--version"),
         "npm": run_text("npm", "--version"),
         "mcp_transport": "local_stdio_only",
-        "development_volume": "local_APFS",
+        "repository_location": "external_ExFAT_project_volume",
+        "development_volume": "ExFAT_repository_with_local_APFS_dependency_and_test_cache",
     }
 
 

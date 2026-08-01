@@ -5,7 +5,7 @@
 - Freeplane 1.13.3 is installed at `/Applications/Freeplane.app` on Apple Silicon.
 - Bundled runtime is OpenJDK 21; local Node is 22.17.1 and npm is 10.9.2.
 - Codex supports local STDIO MCP servers configured in user or project `config.toml`.
-- `/Volumes/huawei` is ExFAT; implementation will live on local APFS.
+- The repository lives at `/Volumes/huawei/项目实战/freeplane-mcp` on ExFAT; Node dependencies and temporary build/test work will use local APFS storage.
 
 ## Verified Freeplane automation surfaces
 
@@ -25,4 +25,4 @@
 - Consultation ZIP contains 18 members and 17 manifest-hashed content files plus the manifest.
 - Privacy scan found zero forbidden local paths, credentials, raw regulatory data, or paper files.
 - ZIP excludes ExFAT AppleDouble and `.DS_Store` metadata.
-- ZIP SHA-256: `278401b6b78f8de0fb91b26449ae22087cd9b632d56919f3e7d196d22169bda2`.
+- ZIP SHA-256: `e164ca9568597b770a009191c4e49a264cb55e8aae757566c61b1e808910aeb5`.
