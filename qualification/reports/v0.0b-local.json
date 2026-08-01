@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "stage": "v0.0B",
+  "generated_at": "2026-08-01T08:29:01.907Z",
+  "passed": true,
+  "qualification_report": "v0.0b-ff6dab76e60a",
+  "freeplane": {
+    "version": "1.13.3",
+    "build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822",
+    "addon_version": "0.0.0-b"
+  },
+  "isolation": {
+    "temporary_user_profile": true,
+    "global_profile_modified": false,
+    "fixture": "fixtures/core-mm/v0.0b.mm",
+    "spawned_process_only": true,
+    "signalled_pid_observed": true
+  },
+  "hard_gate": {
+    "unsaved_gui_edit_under_1s": true,
+    "mixed_100_one_undo": true,
+    "redo_equivalent": true,
+    "failure_points_verified": 100,
+    "rollback_snapshot_equal": true,
+    "recovery_required": false
+  },
+  "metrics": {
+    "unsaved_ui_detection_ms": 204,
+    "mixed_100_commit_ms": 287.68,
+    "failure_injection_100_ms": 8135.59
+  },
+  "checks": [
+    {
+      "id": "addon.build_and_self_test",
+      "status": "pass",
+      "evidence": "javac --release 17, JAR packaging, and BridgeSelfTest passed"
+    },
+    {
+      "id": "bridge.discovery_and_binding",
+      "status": "pass",
+      "evidence": "dynamic 127.0.0.1 port; runtime 0700; discovery 0600"
+    },
+    {
+      "id": "bridge.discovery_identity",
+      "status": "pass",
+      "evidence": "Freeplane process, instance, version/build, and 256-bit token are pinned"
+    },
+    {
+      "id": "bridge.health_main_thread",
+      "status": "pass",
+      "evidence": "health completed on the Freeplane main thread in isolated qualification mode"
+    },
+    {
+      "id": "bridge.auth_missing",
+      "status": "pass",
+      "evidence": "missing bearer token was rejected"
+    },
+    {
+      "id": "bridge.auth_wrong",
+      "status": "pass",
+      "evidence": "wrong bearer token was rejected"
+    },
+    {
+      "id": "bridge.origin_rejected",
+      "status": "pass",
+      "evidence": "browser Origin was rejected without CORS"
+    },
+    {
+      "id": "bridge.content_type",
+      "status": "pass",
+      "evidence": "non-JSON POST was rejected"
+    },
+    {
+      "id": "bridge.request_id",
+      "status": "pass",
+      "evidence": "missing X-Request-Id was rejected"
+    },
+    {
+      "id": "bridge.trust_boundary",
+      "status": "pass",
+      "evidence": "auth, Origin, Content-Type, request-id, and 10 MiB boundary reject invalid requests"
+    },
+    {
+      "id": "realtime.unsaved_gui_edit",
+      "status": "pass",
+      "evidence": "Swing editor change was readable in 204 ms without saving"
+    },
+    {
+      "id": "events.gui_journal",
+      "status": "pass",
+      "evidence": "GUI mutation was retained in the cursor journal"
+    },
+    {
+      "id": "read.canonical_and_search",
+      "status": "pass",
+      "evidence": "canonical read and literal search returned the unsaved root"
+    },
+    {
+      "id": "transaction.plan_zero_effect",
+      "status": "pass",
+      "evidence": "100-operation plan did not mutate the map"
+    },
+    {
+      "id": "transaction.mixed_100_commit",
+      "status": "pass",
+      "evidence": "100 mixed operations committed and read back in 287.68 ms"
+    },
+    {
+      "id": "transaction.one_compound_undo",
+      "status": "pass",
+      "evidence": "one Freeplane undo restored the exact pre-transaction canonical snapshot"
+    },
+    {
+      "id": "transaction.redo_equivalence",
+      "status": "pass",
+      "evidence": "one Freeplane redo restored the exact committed canonical snapshot"
+    },
+    {
+      "id": "transaction.undo_cleanup",
+      "status": "pass",
+      "evidence": "qualification map returned to its pre-transaction state in 2 history step(s)"
+    },
+    {
+      "id": "transaction.failure_injection_every_operation",
+      "status": "pass",
+      "evidence": "all 100 failure points rolled back to canonical equality in 8135.59 ms"
+    },
+    {
+      "id": "transaction.postcondition_failure_rollback",
+      "status": "pass",
+      "evidence": "injected postcondition mismatch rolled back to canonical equality"
+    },
+    {
+      "id": "transaction.revision_conflict_zero_write",
+      "status": "pass",
+      "evidence": "stale plan was rejected before write and the winning transaction remained one undo unit"
+    },
+    {
+      "id": "isolation.fixture_never_saved",
+      "status": "pass",
+      "evidence": "all GUI and bridge edits remained unsaved; fixture bytes were unchanged"
+    }
+  ],
+  "degradation": {
+    "mcp_write_tools_registered": false,
+    "bridge_missing": "v0.0A evidence-only MCP behavior remains active",
+    "unqualified_build": "bridge installation is refused by the surrounding qualification workflow"
+  },
+  "diagnostics": null
+}

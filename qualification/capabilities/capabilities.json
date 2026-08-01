@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-01T07:07:07.209Z",
+  "generated_at": "2026-08-01T08:29:01.907Z",
   "freeplane_version": "1.13.3",
   "freeplane_build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822",
-  "addon_version": null,
+  "addon_version": "0.0.0-b",
   "protocol_revision": "2025-11-25",
   "capabilities": [
     {
@@ -35,40 +35,40 @@
     {
       "capability_id": "map.read",
       "scope": "read",
-      "status": "needs_validation",
+      "status": "verified_public_api",
       "route": "public_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.0a-ff6dab76e60a",
+      "qualification_report": "v0.0b-ff6dab76e60a",
       "evidence": [
-        "class.public.controller",
-        "class.public.mind_map"
+        "v0.0b.unsaved_gui_read",
+        "v0.0b.canonical_snapshot"
       ]
     },
     {
       "capability_id": "node.read",
       "scope": "read",
-      "status": "needs_validation",
+      "status": "verified_public_api",
       "route": "public_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.0a-ff6dab76e60a",
+      "qualification_report": "v0.0b-ff6dab76e60a",
       "evidence": [
-        "class.public.node"
+        "v0.0b.unsaved_gui_read",
+        "v0.0b.canonical_snapshot"
       ]
     },
     {
       "capability_id": "node.update_text",
       "scope": "edit",
-      "status": "needs_validation",
+      "status": "verified_internal_api",
       "route": "internal_api",
       "risk": "normal",
       "freeplane_version": "1.13.3",
-      "qualification_report": "v0.0a-ff6dab76e60a",
+      "qualification_report": "v0.0b-ff6dab76e60a",
       "evidence": [
-        "class.public.node",
-        "class.internal.transaction_controller",
-        "class.internal.undo_handler"
+        "v0.0b.mixed_100_compound_undo",
+        "v0.0b.failure_injection_100"
       ]
     },
     {
@@ -134,6 +134,32 @@
       "qualification_report": "v0.0a-ff6dab76e60a",
       "evidence": [
         "PrintPreviewAction"
+      ]
+    },
+    {
+      "capability_id": "map.changes",
+      "scope": "read",
+      "status": "verified_internal_api",
+      "route": "internal_api",
+      "risk": "normal",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0b-ff6dab76e60a",
+      "evidence": [
+        "v0.0b.listener_journal",
+        "v0.0b.snapshot_reconciliation"
+      ]
+    },
+    {
+      "capability_id": "transaction.atomic_compound_undo",
+      "scope": "edit",
+      "status": "verified_internal_api",
+      "route": "internal_api",
+      "risk": "blocked",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0b-ff6dab76e60a",
+      "evidence": [
+        "v0.0b.mixed_100_compound_undo",
+        "v0.0b.failure_injection_100"
       ]
     }
   ]

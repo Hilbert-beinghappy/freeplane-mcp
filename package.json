@@ -13,11 +13,14 @@
   "packageManager": "npm@10.9.2",
   "scripts": {
     "bootstrap": "node scripts/bootstrap_dev.mjs",
+    "build:addon": "node scripts/build_addon.mjs",
     "build": "tsc -b",
     "clean": "tsc -b --clean",
     "test": "npm run build && npm run test:compiled",
+    "test:addon": "node scripts/build_addon.mjs",
     "test:compiled": "node --test packages/protocol/dist/index.test.js packages/server/dist/probe.test.js packages/server/dist/mcp.test.js",
     "qualify:v0.0a": "npm run build && node packages/server/dist/cli.js probe && npm run test:compiled",
+    "qualify:v0.0b": "node scripts/qualify_v0_0b.mjs",
     "start": "node packages/server/dist/index.js"
   },
   "devDependencies": {
