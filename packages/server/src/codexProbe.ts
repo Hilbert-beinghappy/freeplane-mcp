@@ -7,6 +7,14 @@ import readline from "node:readline";
 import { promisify } from "node:util";
 
 const execFile = promisify(execFileCallback);
+const EXPECTED_TOOLS = [
+  "freeplane_capabilities",
+  "freeplane_changes",
+  "freeplane_list_maps",
+  "freeplane_read",
+  "freeplane_search",
+  "freeplane_status",
+];
 
 export interface CodexHostProbeResult {
   protocol_revision: string;
@@ -105,8 +113,7 @@ export async function runCodexHostProbe(root = process.cwd()): Promise<CodexHost
         const serverName = (status.serverInfo as { name?: string } | undefined)?.name;
         if (
           serverName !== "freeplane-mcp" ||
-          JSON.stringify(toolNames) !==
-            JSON.stringify(["freeplane_capabilities", "freeplane_status"])
+          JSON.stringify(toolNames) !== JSON.stringify(EXPECTED_TOOLS)
         ) {
           return reject(new Error("Codex returned an unexpected Freeplane MCP inventory"));
         }

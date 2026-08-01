@@ -1,12 +1,12 @@
 {
   "name": "@freeplane-mcp/server",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@freeplane-mcp/protocol": "0.0.0",
+    "@freeplane-mcp/protocol": "0.1.0",
     "@modelcontextprotocol/server": "2.0.0",
     "zod": "4.4.3"
   }

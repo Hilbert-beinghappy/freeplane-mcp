@@ -66,6 +66,9 @@ final class MapRegistry implements AutoCloseable {
     private String expectedUiMarker;
     private long expectedUiStartedMillis;
     private Long uiDetectionLatencyMillis;
+    private long suppressListenersUntilMillis;
+    private double lastSnapshotMillis;
+    private double maxSnapshotMillis;
 
     MapRegistry(Controller controller, String instanceId) {
         this.controller = controller;
@@ -86,21 +89,41 @@ final class MapRegistry implements AutoCloseable {
 
     private void queuePoll() {
         if (!pollQueued.compareAndSet(false, true)) return;
-        controller.getMainThreadExecutorService().execute(() -> {
-            try {
-                poll();
-            } finally {
-                pollQueued.set(false);
-            }
-        });
+        try {
+            controller.getMainThreadExecutorService().execute(this::beginPoll);
+        } catch (RuntimeException error) {
+            pollQueued.set(false);
+            throw error;
+        }
     }
 
-    private void poll() {
-        assertMainThread();
-        refreshMaps();
-        for (State state : List.copyOf(statesById.values())) {
-            reconcile(state, "snapshot.reconciled", List.of("unknown"), List.of());
-            reconcileView(state);
+    private void beginPoll() {
+        try {
+            assertMainThread();
+            refreshMaps();
+            pollNext(List.copyOf(statesById.values()), 0);
+        } catch (RuntimeException error) {
+            pollQueued.set(false);
+            throw error;
+        }
+    }
+
+    private void pollNext(List<State> states, int index) {
+        try {
+            assertMainThread();
+            if (index >= states.size()) {
+                pollQueued.set(false);
+                return;
+            }
+            State state = states.get(index);
+            if (statesById.get(state.mapId) == state) {
+                reconcile(state, "snapshot.reconciled", List.of("unknown"), List.of());
+                reconcileView(state);
+            }
+            controller.getMainThreadExecutorService().execute(() -> pollNext(states, index + 1));
+        } catch (RuntimeException error) {
+            pollQueued.set(false);
+            throw error;
         }
     }
 
@@ -133,29 +156,36 @@ final class MapRegistry implements AutoCloseable {
 
     private State attach(MindMap map, MapModel model) {
         State state = new State("fpmap:" + UUID.randomUUID(), map, model);
-        state.publicListener = event -> reconcile(
-                state,
-                "node.updated",
-                List.of(event.getChangedElement().name().toLowerCase(Locale.ROOT)),
-                List.of(event.getNode().getId()));
+        state.publicListener = event -> {
+            if (listenersSuppressed()) return;
+            reconcile(
+                    state,
+                    "node.updated",
+                    List.of(event.getChangedElement().name().toLowerCase(Locale.ROOT)),
+                    List.of(event.getNode().getId()));
+        };
         state.internalListener = new IMapChangeListener() {
             @Override
             public void mapChanged(MapChangeEvent event) {
+                if (listenersSuppressed()) return;
                 reconcile(state, "map.updated", List.of(String.valueOf(event.getProperty())), List.of());
             }
 
             @Override
             public void onNodeDeleted(NodeDeletionEvent event) {
+                if (listenersSuppressed()) return;
                 reconcile(state, "node.deleted", List.of("children"), List.of(event.node.getID()));
             }
 
             @Override
             public void onNodeInserted(NodeModel parent, NodeModel child, int newIndex) {
+                if (listenersSuppressed()) return;
                 reconcile(state, "node.created", List.of("children"), List.of(parent.getID(), child.getID()));
             }
 
             @Override
             public void onNodeMoved(NodeMoveEvent event) {
+                if (listenersSuppressed()) return;
                 reconcile(state, "node.moved", List.of("parent", "position"), List.of(event.child.getID()));
             }
         };
@@ -164,6 +194,8 @@ final class MapRegistry implements AutoCloseable {
         state.snapshot = capture(state);
         state.viewSignature = viewSignature(state);
         state.savedContentRevision = 0;
+        state.fileStamp = fileStamp(map.getFile());
+        state.wasSaved = map.isSaved();
         return state;
     }
 
@@ -181,9 +213,14 @@ final class MapRegistry implements AutoCloseable {
         return map(
                 "map_count", statesById.size(),
                 "active_map_id", active == null ? null : active.mapId,
+                "selected_node_ids", active == null ? List.of() : selectedIds(active),
                 "event_seq", eventSequence,
+                "event_count", events.size(),
+                "event_bytes", eventBytes,
                 "cursor", BridgeSupport.cursor(instanceId, eventSequence),
                 "ui_detection_latency_ms", uiDetectionLatencyMillis,
+                "last_snapshot_ms", lastSnapshotMillis,
+                "max_snapshot_ms", maxSnapshotMillis,
                 "main_thread", SwingUtilities.isEventDispatchThread());
     }
 
@@ -196,17 +233,41 @@ final class MapRegistry implements AutoCloseable {
     }
 
     private Map<String, Object> summary(State state) {
+        File file = state.map.getFile();
+        FileStamp currentFileStamp = fileStamp(file);
+        updateSaveState(state, currentFileStamp);
         return map(
                 "map_id", state.mapId,
                 "name", state.map.getName(),
-                "file_identity", fileIdentity(state.map.getFile()),
+                "title", state.map.getName(),
+                "file_identity", fileIdentity(file),
+                "unsaved", file == null,
+                "active", activeStateWithoutRefresh() == state,
+                "read_only", file != null && Files.exists(file.toPath()) && !Files.isWritable(file.toPath()),
                 "content_revision", state.contentRevision,
                 "view_revision", state.viewRevision,
                 "saved_content_revision", state.savedContentRevision,
                 "dirty", !state.map.isSaved(),
                 "recovery_required", state.recoveryRequired,
+                "root_node_id", state.map.getRoot().getId(),
                 "snapshot_sha256", state.snapshot.hash,
-                "node_count", state.snapshot.nodeCount);
+                "node_count", state.snapshot.nodeCount,
+                "node_count_estimate", state.snapshot.nodeCount,
+                "file_external_change", state.fileStamp != null
+                        && currentFileStamp != null
+                        && !state.fileStamp.equals(currentFileStamp));
+    }
+
+    private FileStamp fileStamp(File file) {
+        if (file == null) return null;
+        try {
+            Path canonical = file.toPath().toAbsolutePath().normalize().toRealPath();
+            BasicFileAttributes attributes = Files.readAttributes(
+                    canonical, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+            return new FileStamp(canonical.toString(), attributes.size(), attributes.lastModifiedTime().toMillis());
+        } catch (IOException | SecurityException unavailable) {
+            return null;
+        }
     }
 
     private Map<String, Object> fileIdentity(File file) {
@@ -346,6 +407,7 @@ final class MapRegistry implements AutoCloseable {
 
     Snapshot capture(State state) {
         assertMainThread();
+        long startedNanos = System.nanoTime();
         Counter counter = new Counter();
         Map<String, Object> data = map(
                 "schema_version", 1,
@@ -353,8 +415,10 @@ final class MapRegistry implements AutoCloseable {
                 "name", state.map.getName(),
                 "background_color", state.map.getBackgroundColorCode(),
                 "root", captureNode(state.map.getRoot(), counter, 0));
-        JsonNode tree = BridgeSupport.JSON.valueToTree(data);
-        return new Snapshot(data, BridgeSupport.canonicalHash(tree), counter.value);
+        Snapshot snapshot = new Snapshot(data, BridgeSupport.sha256(BridgeSupport.jsonBytes(data)), counter.value);
+        lastSnapshotMillis = (System.nanoTime() - startedNanos) / 1_000_000.0;
+        maxSnapshotMillis = Math.max(maxSnapshotMillis, lastSnapshotMillis);
+        return snapshot;
     }
 
     private Map<String, Object> captureNode(Node node, Counter counter, int depth) {
@@ -365,15 +429,21 @@ final class MapRegistry implements AutoCloseable {
             throw new BridgeException(413, "LIMIT_EXCEEDED", "map depth exceeds 1000");
         }
 
-        List<Map<String, Object>> attributes = new ArrayList<>();
-        for (int index = 0; index < node.getAttributes().size(); index++) {
+        var nodeAttributes = node.getAttributes();
+        List<Map<String, Object>> attributes = nodeAttributes.size() == 0
+                ? List.of()
+                : new ArrayList<>(nodeAttributes.size());
+        for (int index = 0; index < nodeAttributes.size(); index++) {
             attributes.add(map(
-                    "name", node.getAttributes().getKey(index),
-                    "value", scalar(node.getAttributes().get(index))));
+                    "name", nodeAttributes.getKey(index),
+                    "value", scalar(nodeAttributes.get(index))));
         }
 
-        List<Map<String, Object>> connectors = new ArrayList<>();
-        for (Connector connector : node.getConnectorsOut()) {
+        var outgoingConnectors = node.getConnectorsOut();
+        List<Map<String, Object>> connectors = outgoingConnectors.isEmpty()
+                ? List.of()
+                : new ArrayList<>(outgoingConnectors.size());
+        for (Connector connector : outgoingConnectors) {
             connectors.add(map(
                     "target_id", connector.getTarget().getId(),
                     "shape", connector.getShape(),
@@ -385,11 +455,31 @@ final class MapRegistry implements AutoCloseable {
                     "middle_label", connector.getMiddleLabel(),
                     "target_label", connector.getTargetLabel()));
         }
-        connectors.sort(Comparator.comparing(item -> BridgeSupport.canonicalHash(
-                BridgeSupport.JSON.valueToTree(item))));
+        if (connectors.size() > 1) {
+            connectors.sort(Comparator.comparing(item -> BridgeSupport.canonicalHash(
+                    BridgeSupport.JSON.valueToTree(item))));
+        }
 
-        List<Map<String, Object>> children = new ArrayList<>();
-        for (Node child : node.getChildren()) children.add(captureNode(child, counter, depth + 1));
+        var link = node.getLink();
+        var linkUri = link.getUri();
+        var linkTarget = link.getNode();
+        var linkText = link.getText();
+        Object links = linkText == null && linkUri == null && linkTarget == null
+                ? null
+                : map(
+                        "text", linkText,
+                        "uri", linkUri == null ? null : linkUri.toString(),
+                        "target_node_id", linkTarget == null ? null : linkTarget.getId());
+        var style = node.getStyle();
+        var created = node.getCreatedAt();
+        var modified = node.getLastModifiedAt();
+        var tags = node.getTags().getTags();
+        var icons = node.getIcons().getIcons();
+        var nodeChildren = node.getChildren();
+        List<Map<String, Object>> children = nodeChildren.isEmpty()
+                ? List.of()
+                : new ArrayList<>(nodeChildren.size());
+        for (Node child : nodeChildren) children.add(captureNode(child, counter, depth + 1));
 
         return map(
                 "id", node.getId(),
@@ -397,12 +487,21 @@ final class MapRegistry implements AutoCloseable {
                 "details", node.getDetailsText(),
                 "note", node.getNoteText(),
                 "attributes", attributes,
-                "tags", List.copyOf(node.getTags().getTags()),
-                "icons", List.copyOf(node.getIcons().getIcons()),
+                "tags", List.copyOf(tags),
+                "icons", List.copyOf(icons),
+                "links", links,
                 "style", map(
-                        "name", node.getStyle().getName(),
-                        "background_color", node.getStyle().getBackgroundColorCode(),
-                        "text_color", node.getStyle().getTextColorCode()),
+                        "name", style.getName(),
+                        "background_color", style.getBackgroundColorCode(),
+                        "text_color", style.getTextColorCode()),
+                "layout", map(
+                        "orientation", String.valueOf(node.getLayoutOrientation()),
+                        "child_nodes", String.valueOf(node.getChildNodesLayout()),
+                        "free", node.isFree()),
+                "timestamps", map(
+                        "created", created == null ? null : created.toInstant().toString(),
+                        "modified", modified == null ? null : modified.toInstant().toString()),
+                "encryption", null,
                 "folded", node.isFolded(),
                 "connectors", connectors,
                 "children", children);
@@ -421,8 +520,17 @@ final class MapRegistry implements AutoCloseable {
             appendEvent(state, kind, sourceFor(state), nodeIds, fields, transactionId);
             detectUiEdit(state);
         }
-        if (state.map.isSaved()) state.savedContentRevision = state.contentRevision;
+        updateSaveState(state, fileStamp(state.map.getFile()));
         return actual;
+    }
+
+    private void updateSaveState(State state, FileStamp currentFileStamp) {
+        boolean saved = state.map.isSaved();
+        if (saved && !state.wasSaved) {
+            state.savedContentRevision = state.contentRevision;
+            state.fileStamp = currentFileStamp;
+        }
+        state.wasSaved = saved;
     }
 
     private void detectUiEdit(State state) {
@@ -435,6 +543,27 @@ final class MapRegistry implements AutoCloseable {
         assertMainThread();
         expectedUiMarker = marker;
         expectedUiStartedMillis = startedMillis;
+    }
+
+    Map<String, Object> qualificationSilentText(String mapId, String value) {
+        assertMainThread();
+        State state = requireState(mapId);
+        suppressListenersUntilMillis = System.currentTimeMillis() + 1_000;
+        state.map.getRoot().setText(value);
+        return map("map_id", mapId, "pending_reconciliation", true);
+    }
+
+    private boolean listenersSuppressed() {
+        return System.currentTimeMillis() < suppressListenersUntilMillis;
+    }
+
+    Map<String, Object> qualificationFillEvents(String mapId, int count) {
+        assertMainThread();
+        State state = requireState(mapId);
+        for (int index = 0; index < count; index++) {
+            appendEvent(state, "qualification.synthetic", "system", List.of(), List.of("qualification"), null);
+        }
+        return map("event_count", events.size(), "event_bytes", eventBytes, "cursor", BridgeSupport.cursor(instanceId, eventSequence));
     }
 
     private void reconcileView(State state) {
@@ -486,7 +615,10 @@ final class MapRegistry implements AutoCloseable {
                 "view_revision", state.viewRevision,
                 "source", source,
                 "kind", kind,
-                "persistence_effect", kind.startsWith("view.") ? "session_only" : "persistent",
+                "persistence_effect", kind.startsWith("view.")
+                        || kind.equals("map.opened")
+                        || kind.equals("map.closed")
+                        || kind.startsWith("qualification.") ? "session_only" : "persistent",
                 "affected_node_ids", distinct(nodeIds),
                 "changed_fields", distinct(fields),
                 "transaction_id", eventTransactionId,
@@ -534,7 +666,16 @@ final class MapRegistry implements AutoCloseable {
 
     @Override
     public void close() {
+        assertMainThread();
         scheduler.shutdownNow();
+        for (State state : List.copyOf(statesById.values())) {
+            state.map.removeListener(state.publicListener);
+            state.model.removeMapChangeListener(state.internalListener);
+        }
+        statesById.clear();
+        statesByModel.clear();
+        events.clear();
+        eventBytes = 0;
     }
 
     static final class State {
@@ -548,6 +689,8 @@ final class MapRegistry implements AutoCloseable {
         long viewRevision;
         long savedContentRevision;
         String viewSignature = "";
+        FileStamp fileStamp;
+        boolean wasSaved;
         boolean recoveryRequired;
 
         State(String mapId, MindMap map, MapModel model) {
@@ -561,6 +704,9 @@ final class MapRegistry implements AutoCloseable {
     }
 
     private record EventRecord(long sequence, Map<String, Object> data, int bytes) {
+    }
+
+    private record FileStamp(String path, long size, long modifiedMillis) {
     }
 
     private static final class Counter {

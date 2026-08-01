@@ -248,7 +248,8 @@ final class BridgeSupport {
 
     static Map<String, Object> map(Object... values) {
         if (values.length % 2 != 0) throw new IllegalArgumentException("map needs key/value pairs");
-        Map<String, Object> result = new LinkedHashMap<>();
+        int entries = values.length / 2;
+        Map<String, Object> result = new LinkedHashMap<>(Math.max(1, (entries * 4 + 2) / 3));
         for (int index = 0; index < values.length; index += 2) {
             result.put((String) values[index], values[index + 1]);
         }

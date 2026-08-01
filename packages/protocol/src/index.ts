@@ -171,6 +171,109 @@ export const CapabilitiesInputSchema = z
   })
   .strict();
 
+export const ListMapsInputSchema = z
+  .object({
+    include_closed_recent: z.boolean().default(false),
+  })
+  .strict();
+
+export const ReadFieldSchema = z.enum([
+  "text",
+  "details",
+  "note",
+  "attributes",
+  "tags",
+  "icons",
+  "links",
+  "connectors",
+  "style",
+  "layout",
+  "timestamps",
+  "encryption",
+]);
+
+const DEFAULT_READ_FIELDS = [
+  "text",
+  "details",
+  "note",
+  "attributes",
+  "tags",
+  "icons",
+  "links",
+  "connectors",
+  "style",
+  "layout",
+  "timestamps",
+  "encryption",
+] as const;
+
+export const ReadInputSchema = z
+  .object({
+    map_id: z.string().min(1).max(512).optional(),
+    scope: z.enum(["map", "subtree", "nodes", "selection"]).default("map"),
+    root_node_id: z.string().min(1).max(512).optional(),
+    node_ids: z.array(z.string().min(1).max(512)).max(5_000).default([]),
+    depth: z.int().min(0).max(1_000).default(3),
+    fields: z.array(ReadFieldSchema).max(DEFAULT_READ_FIELDS.length).default([...DEFAULT_READ_FIELDS]),
+    include_effective_style: z.literal(false).default(false),
+    max_nodes: z.int().min(1).max(5_000).default(1_000),
+    page_cursor: z.string().min(1).max(2_048).nullable().default(null),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.scope !== "selection" && !value.map_id) {
+      context.addIssue({ code: "custom", message: "map_id is required for this scope", path: ["map_id"] });
+    }
+    if (value.scope === "subtree" && !value.root_node_id) {
+      context.addIssue({
+        code: "custom",
+        message: "root_node_id is required for subtree scope",
+        path: ["root_node_id"],
+      });
+    }
+    if (value.scope === "nodes" && value.node_ids.length === 0) {
+      context.addIssue({ code: "custom", message: "node_ids cannot be empty", path: ["node_ids"] });
+    }
+    if (new Set(value.fields).size !== value.fields.length) {
+      context.addIssue({ code: "custom", message: "fields cannot contain duplicates", path: ["fields"] });
+    }
+  });
+
+export const SearchInputSchema = z
+  .object({
+    map_id: z.string().min(1).max(512),
+    scope: z
+      .object({
+        root_node_id: z.string().min(1).max(512).nullable().default(null),
+        include_descendants: z.boolean().default(true),
+      })
+      .strict()
+      .default({ root_node_id: null, include_descendants: true }),
+    query: z
+      .object({
+        text: z
+          .object({
+            mode: z.literal("literal"),
+            value: z.string().min(1).max(512),
+            case_sensitive: z.boolean().default(false),
+          })
+          .strict(),
+      })
+      .strict(),
+    max_results: z.int().min(1).max(1_000).default(200),
+    include_snippets: z.boolean().default(true),
+  })
+  .strict();
+
+export const ChangesInputSchema = z
+  .object({
+    cursor: z.string().min(1).max(512).nullable().default(null),
+    map_id: z.string().min(1).max(512).nullable().default(null),
+    limit: z.int().min(1).max(1_000).default(1_000),
+    wait_ms: z.int().min(0).max(750).default(0),
+  })
+  .strict();
+
 export const TOOL_NAMES = [
   "freeplane_status",
   "freeplane_capabilities",

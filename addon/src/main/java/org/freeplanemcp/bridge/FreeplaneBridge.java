@@ -34,7 +34,7 @@ import static org.freeplanemcp.bridge.BridgeSupport.BridgeException;
 import static org.freeplanemcp.bridge.BridgeSupport.map;
 
 public final class FreeplaneBridge implements AutoCloseable {
-    private static final String ADDON_VERSION = "0.0.0-b";
+    private static final String ADDON_VERSION = "0.1.0";
     private static final String QUALIFIED_BUILD_FINGERPRINT = "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822";
     private static final int REQUESTS_PER_SECOND = 240;
     private static FreeplaneBridge instance;
@@ -278,10 +278,63 @@ public final class FreeplaneBridge implements AutoCloseable {
                 return map("ready", true);
             });
         }
+        if (method.equals("POST") && path.equals("/v1/qualification/silent-text")) {
+            requireQualification();
+            String mapId = BridgeSupport.requiredText(body, "map_id");
+            String value = BridgeSupport.requiredText(body, "value");
+            if (value.length() > 512) throw new BridgeException(413, "LIMIT_EXCEEDED", "Qualification text is too long");
+            return onMain(() -> registry.qualificationSilentText(mapId, value));
+        }
+        if (method.equals("POST") && path.equals("/v1/qualification/fill-events")) {
+            requireQualification();
+            String mapId = BridgeSupport.requiredText(body, "map_id");
+            int count = BridgeSupport.optionalInt(body, "count", 1, 1, 60_000);
+            return onMain(() -> registry.qualificationFillEvents(mapId, count));
+        }
+        if (method.equals("POST") && path.equals("/v1/qualification/restart")) {
+            requireQualification();
+            scheduleRestart();
+            return map("restart_scheduled", true, "previous_instance_id", instanceId);
+        }
         if (path.startsWith("/v1/")) {
             throw new BridgeException(404, "CAPABILITY_UNAVAILABLE", "Bridge endpoint is unavailable");
         }
         throw new BridgeException(404, "CAPABILITY_UNAVAILABLE", "Unknown bridge path");
+    }
+
+    private void requireQualification() {
+        if (!qualification) {
+            throw new BridgeException(403, "POLICY_DENIED", "Qualification endpoint is disabled outside an isolated run");
+        }
+    }
+
+    private void scheduleRestart() {
+        Thread restart = new Thread(() -> {
+            try {
+                Thread.sleep(150);
+                synchronized (FreeplaneBridge.class) {
+                    if (instance != this || closed) return;
+                    Controller restartController = controller;
+                    String restartRuntime = runtimeOverride;
+                    boolean restartQualification = qualification;
+                    String restartFingerprint = configuredFingerprint;
+                    close(false);
+                    instance = new FreeplaneBridge(
+                            restartController,
+                            restartRuntime,
+                            restartQualification,
+                            restartFingerprint);
+                }
+            } catch (Throwable error) {
+                System.err.println("Freeplane MCP qualification restart failed: " + safeMessage(error));
+                error.printStackTrace(System.err);
+                synchronized (FreeplaneBridge.class) {
+                    if (instance == this) instance = null;
+                }
+            }
+        }, "freeplane-mcp-qualification-restart");
+        restart.setDaemon(true);
+        restart.start();
     }
 
     private <T> T onMain(Callable<T> action) throws Exception {
@@ -350,11 +403,24 @@ public final class FreeplaneBridge implements AutoCloseable {
 
     @Override
     public synchronized void close() {
+        close(true);
+    }
+
+    private synchronized void close(boolean terminateWorkers) {
         if (closed) return;
         closed = true;
+        try {
+            onMain(() -> {
+                registry.close();
+                return null;
+            });
+        } catch (Exception ignored) {
+            // The process is shutting down; discovery is removed below either way.
+        }
         server.stop(0);
-        workers.shutdownNow();
-        registry.close();
+        // ponytail: qualification restart leaves two old daemon workers; the isolated process
+        // exits after the gate. Normal shutdown still terminates its pool immediately.
+        if (terminateWorkers) workers.shutdownNow();
         try {
             if (Files.exists(discoveryPath)) {
                 JsonNode discovery = BridgeSupport.JSON.readTree(Files.readAllBytes(discoveryPath));

@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "stage": "v0.1",
+  "generated_at": "2026-08-01T09:48:35.175Z",
+  "passed": true,
+  "qualification_report": "v0.1-ff6dab76e60a",
+  "freeplane": {
+    "version": "1.13.3",
+    "build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822",
+    "addon_version": "0.1.0"
+  },
+  "mcp": {
+    "server_version": "0.1.0",
+    "protocol_revision": "2025-11-25",
+    "registered_tools": [
+      "freeplane_status",
+      "freeplane_capabilities",
+      "freeplane_list_maps",
+      "freeplane_read",
+      "freeplane_search",
+      "freeplane_changes"
+    ],
+    "write_tools_registered": false
+  },
+  "isolation": {
+    "temporary_user_profile": true,
+    "global_profile_modified": false,
+    "generated_fixture_nodes": 5000,
+    "spawned_process_only": true
+  },
+  "hard_gate": {
+    "status_p95_under_500ms": true,
+    "read_5000_p95_under_2s": true,
+    "event_visibility_p95_under_1s": true,
+    "reconnect_under_2s": true,
+    "snapshot_ui_slice_under_100ms": true,
+    "journal_rss_delta_under_64m": true,
+    "file_fallback_excludes_unsaved_state": true,
+    "regex_disabled": true
+  },
+  "metrics": {
+    "status": {
+      "cold_ms": 99.07,
+      "hot_runs": 20,
+      "p50_ms": 1.29,
+      "p95_ms": 2.59,
+      "max_ms": 3.42
+    },
+    "read_5000": {
+      "cold_ms": 71.83,
+      "hot_runs": 20,
+      "p50_ms": 34.08,
+      "p95_ms": 45.06,
+      "max_ms": 54.46
+    },
+    "snapshot_slice": {
+      "cold_ms": 82.47,
+      "hot_runs": 1,
+      "p50_ms": 10.7,
+      "p95_ms": 82.47,
+      "max_ms": 82.47
+    },
+    "event_visibility": {
+      "cold_ms": 996.13,
+      "hot_runs": 19,
+      "p50_ms": 871.97,
+      "p95_ms": 945.48,
+      "max_ms": 945.48
+    },
+    "journal_memory": {
+      "event_count": 50000,
+      "serialized_bytes": 16088836,
+      "rss_before_bytes": 782630912,
+      "rss_after_bytes": 782843904,
+      "rss_delta_bytes": 212992,
+      "limit_bytes": 67108864
+    },
+    "reconnect": {
+      "cold_ms": 228.13,
+      "hot_runs": 1,
+      "p50_ms": 228.13,
+      "p95_ms": 228.13,
+      "max_ms": 228.13
+    }
+  },
+  "checks": [
+    {
+      "id": "build.server_and_addon",
+      "status": "pass",
+      "evidence": "TypeScript build and Java add-on self-test passed"
+    },
+    {
+      "id": "bridge.isolated_identity",
+      "status": "pass",
+      "evidence": "isolated child PID, qualified build, 0700 runtime, and 0600 discovery matched"
+    },
+    {
+      "id": "mcp.read_only_surface",
+      "status": "pass",
+      "evidence": "exactly six qualified read-only tools were registered"
+    },
+    {
+      "id": "realtime.status",
+      "status": "pass",
+      "evidence": "bridge status p95 2.59 ms (cold 99.07 ms)"
+    },
+    {
+      "id": "mcp.capability_honesty",
+      "status": "pass",
+      "evidence": "capability inspection marks qualified read routes available and keeps pre-v0.2 edit internals unavailable via MCP"
+    },
+    {
+      "id": "read.map_inventory",
+      "status": "pass",
+      "evidence": "live map inventory reported the active 5,000-node unsaved-capable map"
+    },
+    {
+      "id": "read.external_file_identity",
+      "status": "pass",
+      "evidence": "a saved map retained its baseline across polling and detected an external mtime change"
+    },
+    {
+      "id": "performance.read_5000",
+      "status": "pass",
+      "evidence": "5,000-node read p95 45.06 ms (cold 71.83 ms)"
+    },
+    {
+      "id": "performance.snapshot_ui_slice",
+      "status": "pass",
+      "evidence": "maximum measured 5,000-node EDT snapshot slice was 82.47 ms"
+    },
+    {
+      "id": "read.scopes_and_pagination",
+      "status": "pass",
+      "evidence": "map pages, revision-bound cursor validation, and explicit selection IDs passed"
+    },
+    {
+      "id": "search.structured_literal",
+      "status": "pass",
+      "evidence": "bounded structured literal search found the expected node without script or regex evaluation"
+    },
+    {
+      "id": "realtime.swing_events",
+      "status": "pass",
+      "evidence": "real Swing edit event p95 945.48 ms; saved fixture bytes unchanged"
+    },
+    {
+      "id": "events.synthetic_reconciliation",
+      "status": "pass",
+      "evidence": "a deliberately suppressed listener was recovered by snapshot reconciliation"
+    },
+    {
+      "id": "events.bounded_and_expiring",
+      "status": "pass",
+      "evidence": "50000 retained events used 16088836 serialized bytes and 212992 RSS bytes; stale cursor forced full resync"
+    },
+    {
+      "id": "bridge.reconnect_and_cursor_instance",
+      "status": "pass",
+      "evidence": "new bridge health appeared in 228.13 ms and rejected the old instance cursor"
+    },
+    {
+      "id": "fallback.explicit_saved_authority",
+      "status": "pass",
+      "evidence": "bridge loss exposed only configured saved bytes with file authority and no unsaved visibility"
+    },
+    {
+      "id": "fallback.xml_security_matrix",
+      "status": "pass",
+      "evidence": "16 hostile path/XML fixtures rejected; external URL caused 0 network requests"
+    },
+    {
+      "id": "mcp.stderr_clean",
+      "status": "pass",
+      "evidence": "STDIO server wrote no stderr during qualified calls"
+    }
+  ],
+  "diagnostics": null
+}

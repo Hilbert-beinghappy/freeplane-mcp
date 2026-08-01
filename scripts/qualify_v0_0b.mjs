@@ -10,8 +10,8 @@ const root = process.cwd();
 const app = process.env.FREEPLANE_APP ?? "/Applications/Freeplane.app";
 const binary = path.join(app, "Contents/MacOS/Freeplane");
 const buildDir = process.env.FREEPLANE_MCP_BUILD_DIR
-  ?? path.join(homedir(), "Library/Caches/Freeplane-MCP/build/v0.0b");
-const addonJar = path.join(buildDir, "freeplane-mcp-bridge-0.0.0-b.jar");
+  ?? path.join(homedir(), "Library/Caches/Freeplane-MCP/build/v0.1");
+const addonJar = path.join(buildDir, "freeplane-mcp-bridge-0.1.0.jar");
 const fixtureSource = path.join(root, "fixtures/core-mm/v0.0b.mm");
 const reportPath = path.join(root, "qualification/reports/v0.0b-local.json");
 const manifestPath = path.join(root, "qualification/capabilities/capabilities.json");
@@ -556,7 +556,7 @@ const report = {
   freeplane: {
     version: "1.13.3",
     build_fingerprint: fingerprint,
-    addon_version: "0.0.0-b",
+    addon_version: "0.1.0",
   },
   isolation: {
     temporary_user_profile: true,
@@ -591,14 +591,15 @@ await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
 if (passed) {
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   manifest.generated_at = report.generated_at;
-  manifest.addon_version = "0.0.0-b";
+  manifest.addon_version = "0.1.0";
   for (const capability of manifest.capabilities) {
-    if (["map.read", "node.read"].includes(capability.capability_id)) {
+    const mayReplaceEvidence = /^v0\.0[ab]-/.test(capability.qualification_report);
+    if (["map.read", "node.read"].includes(capability.capability_id) && mayReplaceEvidence) {
       capability.status = "verified_public_api";
       capability.qualification_report = report.qualification_report;
       capability.evidence = ["v0.0b.unsaved_gui_read", "v0.0b.canonical_snapshot"];
     }
-    if (capability.capability_id === "node.update_text") {
+    if (capability.capability_id === "node.update_text" && mayReplaceEvidence) {
       capability.status = "verified_internal_api";
       capability.qualification_report = report.qualification_report;
       capability.evidence = ["v0.0b.mixed_100_compound_undo", "v0.0b.failure_injection_100"];
