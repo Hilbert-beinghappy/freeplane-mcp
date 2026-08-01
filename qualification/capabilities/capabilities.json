@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-01T07:07:07.209Z",
+  "freeplane_version": "1.13.3",
+  "freeplane_build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822",
+  "addon_version": null,
+  "protocol_revision": "2025-11-25",
+  "capabilities": [
+    {
+      "capability_id": "runtime.status",
+      "scope": "read",
+      "status": "file_read",
+      "route": "file",
+      "risk": "normal",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "build.fingerprint",
+        "protocol.static_compatibility"
+      ]
+    },
+    {
+      "capability_id": "runtime.capabilities",
+      "scope": "read",
+      "status": "file_read",
+      "route": "file",
+      "risk": "normal",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "menu.inventory",
+        "class.public.controller"
+      ]
+    },
+    {
+      "capability_id": "map.read",
+      "scope": "read",
+      "status": "needs_validation",
+      "route": "public_api",
+      "risk": "normal",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "class.public.controller",
+        "class.public.mind_map"
+      ]
+    },
+    {
+      "capability_id": "node.read",
+      "scope": "read",
+      "status": "needs_validation",
+      "route": "public_api",
+      "risk": "normal",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "class.public.node"
+      ]
+    },
+    {
+      "capability_id": "node.update_text",
+      "scope": "edit",
+      "status": "needs_validation",
+      "route": "internal_api",
+      "risk": "normal",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "class.public.node",
+        "class.internal.transaction_controller",
+        "class.internal.undo_handler"
+      ]
+    },
+    {
+      "capability_id": "summary.create",
+      "scope": "edit",
+      "status": "needs_validation",
+      "route": "internal_api",
+      "risk": "normal",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "class.internal.transaction_controller",
+        "NewSummaryAction"
+      ]
+    },
+    {
+      "capability_id": "document.lifecycle",
+      "scope": "document",
+      "status": "needs_validation",
+      "route": "public_api",
+      "risk": "confirm",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "class.public.controller",
+        "class.public.mind_map"
+      ]
+    },
+    {
+      "capability_id": "export.basic",
+      "scope": "export",
+      "status": "needs_validation",
+      "route": "menu",
+      "risk": "confirm",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "ExportAction"
+      ]
+    },
+    {
+      "capability_id": "presentation.navigate",
+      "scope": "gui",
+      "status": "needs_validation",
+      "route": "menu",
+      "risk": "normal",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "StartPresentationAction",
+        "StopPresentationAction",
+        "ShowNextSlideAction",
+        "ShowPreviousSlideAction"
+      ]
+    },
+    {
+      "capability_id": "print.preview",
+      "scope": "gui",
+      "status": "needs_validation",
+      "route": "menu",
+      "risk": "normal",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "PrintPreviewAction"
+      ]
+    }
+  ]
+}

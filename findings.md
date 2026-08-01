@@ -26,3 +26,13 @@
 - Privacy scan found zero forbidden local paths, credentials, raw regulatory data, or paper files.
 - ZIP excludes ExFAT AppleDouble and `.DS_Store` metadata.
 - ZIP SHA-256: `e164ca9568597b770a009191c4e49a264cb55e8aae757566c61b1e808910aeb5`.
+
+## v0.0A implementation evidence
+
+- Frozen implementation specification SHA-256: `a8e61e606556cd02e10bf2e80a29cdc6e320bff2dbcb07b48c2d5d86f57beddf`.
+- Frozen Freeplane build fingerprint: `ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822` across ten bundle artifacts.
+- Freeplane's bundled Java is 21.0.11; the interactive shell Java is not used for qualification.
+- Required public APIs and internal transaction methods are present, but remain `needs_validation` until exercised in-process.
+- The built-in Freeplane MCP is present, disabled by default, not listening on port 6298, and advertises protocol revision `2024-11-05`; its token was not read.
+- The server is pinned to MCP `2025-11-25`. Both the official SDK client and the local Codex app-server initialized it, listed its two read-only tools, and called `freeplane_status` successfully.
+- The actual Codex host test uses an isolated temporary `CODEX_HOME` and an ephemeral thread; it does not start a model turn or alter global Codex configuration.

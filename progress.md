@@ -14,3 +14,10 @@
 - v0.0 deliverable created at `分析结果/Freeplane_MCP_GPTPro咨询包_20260801.zip`.
 - The invalid intermediate directory and ZIP were moved to macOS Trash and remain recoverable.
 - Current external gate: wait for the complete GPT Pro response before freezing or implementing v0.1.
+- Received and read the complete implementation decision specification.
+- Created the minimal npm monorepo with exact MCP SDK v2, Zod v4, TypeScript, and Node 22 constraints.
+- Added the frozen response envelope, error registry, 12-tool name registry, and capability manifest schema.
+- Implemented the Freeplane build, class, menu, built-in MCP, dependency, and Codex compatibility probes.
+- Verified an actual isolated Codex app-server handshake and `freeplane_status` call without a model turn or global configuration change.
+- Passed v0.0A with five tests; only status and capability inspection are registered.
+- Current implementation gate: v0.0B transaction and real-time bridge qualification.

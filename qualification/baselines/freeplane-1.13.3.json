@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "bundle_identifier": "org.freeplane.launcher",
+  "freeplane_version": "1.13.3",
+  "build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822",
+  "protocol_revision": "2025-11-25",
+  "mcp_sdk_version": "2.0.0",
+  "zod_version": "4.4.3",
+  "artifacts": [
+    {
+      "relative_path": "Contents/Info.plist",
+      "sha256": "530871eade7620ea4a96def5c1df1db4ad00a71b3ab1dea1095a70aa028c13e2"
+    },
+    {
+      "relative_path": "Contents/app/core/org.freeplane.core/lib/freeplaneeditor-1.13.3.jar",
+      "sha256": "edad9e7046b458c9debf8594f6cd6736d239147d2e768457b09f6ec4f5a435e7"
+    },
+    {
+      "relative_path": "Contents/app/core/org.freeplane.core/lib/freeplaneviewer.jar",
+      "sha256": "ce44ad8d240be4cd12b95711a60a088a890122c55fcca59272c6fbc217077516"
+    },
+    {
+      "relative_path": "Contents/app/freeplanelauncher.jar",
+      "sha256": "dbaca0f39931c4c87ea0b41cfe7634ce24055f92f25b95a528f7a1c16462bf7e"
+    },
+    {
+      "relative_path": "Contents/app/plugins/org.freeplane.plugin.ai/lib/plugin-1.13.3.jar",
+      "sha256": "da2cb7f21341d90aab3657d937e6f3754695f8baaccf68aa6f37cc7a6bf2c5e4"
+    },
+    {
+      "relative_path": "Contents/app/plugins/org.freeplane.plugin.script/lib/plugin-1.13.3.jar",
+      "sha256": "27daf1594a199d651fa8c2ef52ea2176878e68ef60fd059535181bdefecc9934"
+    },
+    {
+      "relative_path": "Contents/app/resources/xml/codeexplorermodemenu.xml",
+      "sha256": "5b42e890782267b1ec3bfc3f8107170e97be30798f6a065506df3bdf939a5db9"
+    },
+    {
+      "relative_path": "Contents/app/resources/xml/filemodemenu.xml",
+      "sha256": "864129590feda1a6ea95e7c7a5d4350a0fae6c8738d86cb43a71cf29fba31718"
+    },
+    {
+      "relative_path": "Contents/app/resources/xml/mindmapmodemenu.xml",
+      "sha256": "37b1815008c2610532d7aba236eb3dd06240c07f0a7658eb6a6531690e6e9dfa"
+    },
+    {
+      "relative_path": "Contents/app/resources/xml/stylemodemenu.xml",
+      "sha256": "27e148462480cd1f1d328d23e6b579e1283c681411535254dbb17a4032670cfc"
+    }
+  ],
+  "class_probes": [
+    {
+      "id": "public.controller",
+      "class_name": "org.freeplane.api.Controller",
+      "classpath": ["Contents/app/freeplanelauncher.jar"],
+      "signatures": ["getMainThreadExecutorService()", "getOpenMindMaps()"]
+    },
+    {
+      "id": "public.node",
+      "class_name": "org.freeplane.api.Node",
+      "classpath": ["Contents/app/freeplanelauncher.jar"],
+      "signatures": ["createChild()", "moveTo(org.freeplane.api.Node", "delete()"]
+    },
+    {
+      "id": "public.mind_map",
+      "class_name": "org.freeplane.api.MindMap",
+      "classpath": ["Contents/app/freeplanelauncher.jar"],
+      "signatures": ["addListener(org.freeplane.api.NodeChangeListener)", "saveAs(java.io.File)", "close(boolean, boolean)"]
+    },
+    {
+      "id": "internal.transaction_controller",
+      "class_name": "org.freeplane.features.mode.mindmapmode.MModeController",
+      "classpath": [
+        "Contents/app/core/org.freeplane.core/lib/freeplaneviewer.jar",
+        "Contents/app/core/org.freeplane.core/lib/freeplaneeditor-1.13.3.jar"
+      ],
+      "signatures": ["startTransaction()", "commit()", "rollback()", "execute(org.freeplane.core.undo.IActor"]
+    },
+    {
+      "id": "internal.undo_handler",
+      "class_name": "org.freeplane.core.undo.IUndoHandler",
+      "classpath": ["Contents/app/core/org.freeplane.core/lib/freeplaneviewer.jar"],
+      "signatures": ["startTransaction()", "commit()", "rollback()", "getTransactionLevel()"]
+    },
+    {
+      "id": "builtin.mcp",
+      "class_name": "org.freeplane.plugin.ai.mcpserver.ModelContextProtocolServer",
+      "classpath": ["Contents/app/plugins/org.freeplane.plugin.ai/lib/plugin-1.13.3.jar"],
+      "signatures": ["MCP_PROTOCOL_VERSION = \"2024-11-05\"", "DEFAULT_PORT = 6298"]
+    }
+  ],
+  "menu_inventory": {
+    "entry_count": 1142,
+    "unique_name_count": 505,
+    "action_entry_count": 884,
+    "unique_action_count": 381,
+    "required_actions": [
+      "ExportAction",
+      "ImportBranchAction",
+      "ImportFolderStructureAction",
+      "ImportMindmanagerFiles",
+      "ImportXmlFile",
+      "NewSummaryAction",
+      "PrintAction",
+      "PrintPreviewAction",
+      "ShowFirstSlideAction",
+      "ShowLastSlideAction",
+      "ShowNextSlideAction",
+      "ShowPreviousSlideAction",
+      "StartPresentationAction",
+      "StopPresentationAction"
+    ]
+  }
+}

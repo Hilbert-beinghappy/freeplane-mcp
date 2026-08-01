@@ -1,0 +1,28 @@
+{
+  "name": "freeplane-mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": "22.x",
+    "npm": ">=10"
+  },
+  "packageManager": "npm@10.9.2",
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap_dev.mjs",
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "test": "npm run build && npm run test:compiled",
+    "test:compiled": "node --test packages/protocol/dist/index.test.js packages/server/dist/probe.test.js packages/server/dist/mcp.test.js",
+    "qualify:v0.0a": "npm run build && node packages/server/dist/cli.js probe && npm run test:compiled",
+    "start": "node packages/server/dist/index.js"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
+    "@types/node": "22.20.1",
+    "typescript": "7.0.2"
+  }
+}

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build the verified GPT Pro consultation package first, then freeze and implement the MCP only after the external planning response is returned and reconciled with local Freeplane 1.13.3 evidence.
+Implement the frozen Freeplane MCP specification sequentially, keeping every unqualified capability unavailable.
 
 ## Phases
 
@@ -12,9 +12,11 @@ Build the verified GPT Pro consultation package first, then freeze and implement
 | 1. Audit Freeplane and Codex automation surfaces | complete | Reproducible action/API inventory and cited automation evidence |
 | 2. Build GPT Pro consultation package | complete | Redacted package contains prompt, brief, inventories, architecture, roadmap, tests, and real example |
 | 3. Validate package | complete | Manifest hashes, ZIP test, filename/encoding checks, and content/privacy audit pass |
-| 4. External GPT Pro review | pending_external | User uploads package and returns the complete response |
-| 5. Reconcile and freeze implementation spec | pending | External advice is checked against local evidence; contracts and gates frozen |
-| 6. Implement v0.1-v1.0 | pending | Version gates pass sequentially; no remote publication without approval |
+| 4. External GPT Pro review | complete | Complete decision specification returned |
+| 5. Reconcile and freeze implementation spec | complete | Contracts, risk boundaries, and sequential gates frozen |
+| 6A. v0.0A evidence and compatibility probe | complete | Exact build, classes, menu inventory, SDK/Codex STDIO handshake, and generated capability manifest pass |
+| 6B. v0.0B transaction and real-time bridge | in_progress | Isolated Freeplane proves live unsaved reads, event reconciliation, rollback equivalence, and one-undo semantics |
+| 7. v0.1-v1.0 capabilities | pending | Later gates pass sequentially; no remote publication without approval |
 
 ## Locked decisions
 
@@ -36,4 +38,4 @@ Build the verified GPT Pro consultation package first, then freeze and implement
 
 ## Current gate
 
-v0.0 is complete. Work must remain at Phase 4 until the user returns GPT Pro's complete response; v0.1 implementation before that would violate the agreed external-review gate.
+v0.0A passed on the frozen Freeplane 1.13.3 build. Map and edit capabilities remain unavailable while v0.0B is implemented and qualified.

@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "stage": "v0.0A",
+  "generated_at": "2026-08-01T07:07:07.209Z",
+  "passed": true,
+  "qualification_report": "v0.0a-ff6dab76e60a",
+  "fixed_protocol_revision": "2025-11-25",
+  "system": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "node_version": "22.17.1"
+  },
+  "codex": {
+    "detected": true,
+    "version": "codex-cli 0.146.0-alpha.9.2",
+    "location": "/Applications/ChatGPT.app/Contents/Resources/codex",
+    "embedded_protocol_revisions": [
+      "2024-11-05",
+      "2025-03-26",
+      "2025-06-18",
+      "2025-11-25",
+      "2026-07-28"
+    ],
+    "host_handshake": {
+      "protocol_revision": "2025-11-25",
+      "server_name": "freeplane-mcp",
+      "tool_names": [
+        "freeplane_capabilities",
+        "freeplane_status"
+      ],
+      "tool_call_verified": true
+    }
+  },
+  "freeplane": {
+    "location": "/Applications/Freeplane.app",
+    "bundle_identifier": "org.freeplane.launcher",
+    "version": "1.13.3",
+    "bundled_java_version": "21.0.11",
+    "build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822",
+    "artifact_count": 10
+  },
+  "builtin_mcp": {
+    "detected": true,
+    "enabled_setting": false,
+    "port": 6298,
+    "port_listening": false,
+    "protocol_revision": "2024-11-05",
+    "token_observed": false
+  },
+  "menu_inventory": {
+    "entry_count": 1142,
+    "unique_name_count": 505,
+    "action_entry_count": 884,
+    "unique_action_count": 381,
+    "required_actions_present": [
+      "ExportAction",
+      "ImportBranchAction",
+      "ImportFolderStructureAction",
+      "ImportMindmanagerFiles",
+      "ImportXmlFile",
+      "NewSummaryAction",
+      "PrintAction",
+      "PrintPreviewAction",
+      "ShowFirstSlideAction",
+      "ShowLastSlideAction",
+      "ShowNextSlideAction",
+      "ShowPreviousSlideAction",
+      "StartPresentationAction",
+      "StopPresentationAction"
+    ]
+  },
+  "checks": [
+    {
+      "id": "runtime.node22",
+      "status": "pass",
+      "evidence": "Node 22.17.1"
+    },
+    {
+      "id": "bundle.identity",
+      "status": "pass",
+      "evidence": "org.freeplane.launcher 1.13.3"
+    },
+    {
+      "id": "build.fingerprint",
+      "status": "pass",
+      "evidence": "10 artifacts matched ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822"
+    },
+    {
+      "id": "protocol.static_compatibility",
+      "status": "pass",
+      "evidence": "SDK and local Codex contain 2025-11-25"
+    },
+    {
+      "id": "dependency.sdk_locked",
+      "status": "pass",
+      "evidence": "@modelcontextprotocol client/server 2.0.0"
+    },
+    {
+      "id": "dependency.zod_singleton",
+      "status": "pass",
+      "evidence": "single Zod 4.4.3"
+    },
+    {
+      "id": "menu.inventory",
+      "status": "pass",
+      "evidence": "1142 entries, 381 unique actions"
+    },
+    {
+      "id": "class.public.controller",
+      "status": "pass",
+      "evidence": "org.freeplane.api.Controller: 2 required signatures present"
+    },
+    {
+      "id": "class.public.node",
+      "status": "pass",
+      "evidence": "org.freeplane.api.Node: 3 required signatures present"
+    },
+    {
+      "id": "class.public.mind_map",
+      "status": "pass",
+      "evidence": "org.freeplane.api.MindMap: 3 required signatures present"
+    },
+    {
+      "id": "class.internal.transaction_controller",
+      "status": "pass",
+      "evidence": "org.freeplane.features.mode.mindmapmode.MModeController: 4 required signatures present"
+    },
+    {
+      "id": "class.internal.undo_handler",
+      "status": "pass",
+      "evidence": "org.freeplane.core.undo.IUndoHandler: 4 required signatures present"
+    },
+    {
+      "id": "class.builtin.mcp",
+      "status": "pass",
+      "evidence": "org.freeplane.plugin.ai.mcpserver.ModelContextProtocolServer: 2 required signatures present"
+    },
+    {
+      "id": "protocol.codex_stdio_handshake",
+      "status": "pass",
+      "evidence": "freeplane-mcp exposed 2 tools through local Codex"
+    }
+  ],
+  "capabilities": [
+    {
+      "capability_id": "runtime.status",
+      "scope": "read",
+      "route": "file",
+      "risk": "normal",
+      "status": "file_read",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "build.fingerprint",
+        "protocol.static_compatibility"
+      ]
+    },
+    {
+      "capability_id": "runtime.capabilities",
+      "scope": "read",
+      "route": "file",
+      "risk": "normal",
+      "status": "file_read",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "menu.inventory",
+        "class.public.controller"
+      ]
+    },
+    {
+      "capability_id": "map.read",
+      "scope": "read",
+      "route": "public_api",
+      "risk": "normal",
+      "status": "needs_validation",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "class.public.controller",
+        "class.public.mind_map"
+      ]
+    },
+    {
+      "capability_id": "node.read",
+      "scope": "read",
+      "route": "public_api",
+      "risk": "normal",
+      "status": "needs_validation",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "class.public.node"
+      ]
+    },
+    {
+      "capability_id": "node.update_text",
+      "scope": "edit",
+      "route": "internal_api",
+      "risk": "normal",
+      "status": "needs_validation",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "class.public.node",
+        "class.internal.transaction_controller",
+        "class.internal.undo_handler"
+      ]
+    },
+    {
+      "capability_id": "summary.create",
+      "scope": "edit",
+      "route": "internal_api",
+      "risk": "normal",
+      "status": "needs_validation",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "class.internal.transaction_controller",
+        "NewSummaryAction"
+      ]
+    },
+    {
+      "capability_id": "document.lifecycle",
+      "scope": "document",
+      "route": "public_api",
+      "risk": "confirm",
+      "status": "needs_validation",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "class.public.controller",
+        "class.public.mind_map"
+      ]
+    },
+    {
+      "capability_id": "export.basic",
+      "scope": "export",
+      "route": "menu",
+      "risk": "confirm",
+      "status": "needs_validation",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "ExportAction"
+      ]
+    },
+    {
+      "capability_id": "presentation.navigate",
+      "scope": "gui",
+      "route": "menu",
+      "risk": "normal",
+      "status": "needs_validation",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "StartPresentationAction",
+        "StopPresentationAction",
+        "ShowNextSlideAction",
+        "ShowPreviousSlideAction"
+      ]
+    },
+    {
+      "capability_id": "print.preview",
+      "scope": "gui",
+      "route": "menu",
+      "risk": "normal",
+      "status": "needs_validation",
+      "freeplane_version": "1.13.3",
+      "qualification_report": "v0.0a-ff6dab76e60a",
+      "evidence": [
+        "PrintPreviewAction"
+      ]
+    }
+  ]
+}
