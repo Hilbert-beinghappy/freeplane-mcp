@@ -5,11 +5,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { ResponseEnvelopeSchema } from "@freeplane-mcp/protocol";
-import { Client } from "@modelcontextprotocol/client";
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { StdioClientTransport, getDefaultEnvironment } from "@modelcontextprotocol/client/stdio";
 
 import { runCodexHostProbe } from "./codexProbe.js";
 import { BridgeClientError, readBoundedResponseText } from "./bridgeClient.js";
+import { createFreeplaneMcpServer, loadProbeResult, runtimeOptions } from "./mcp.js";
 
 const EXPECTED_TOOLS = [
   "freeplane_apply",
@@ -20,6 +21,7 @@ const EXPECTED_TOOLS = [
   "freeplane_read",
   "freeplane_search",
   "freeplane_status",
+  "freeplane_view",
 ];
 
 test("bridge response streaming stops at the configured byte ceiling", async () => {
@@ -30,7 +32,7 @@ test("bridge response streaming stops at the configured byte ceiling", async () 
   );
 });
 
-test("stdio handshake is pinned, clean, and exposes only qualified v0.2 tools", async () => {
+test("stdio handshake is pinned, clean, and exposes only qualified v0.3 tools", async () => {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.resolve("packages/server/dist/index.js")],
@@ -68,7 +70,7 @@ test("stdio handshake is pinned, clean, and exposes only qualified v0.2 tools", 
       qualification_passed?: boolean;
     };
     assert.equal(statusData.degraded, true);
-    assert.match(statusData.qualification_report ?? "", /^v0\.2-/);
+    assert.match(statusData.qualification_report ?? "", /^v0\.3-/);
     assert.equal(statusData.qualification_passed, true);
 
     const capabilities = ResponseEnvelopeSchema.parse((await client.callTool({
@@ -84,11 +86,53 @@ test("stdio handshake is pinned, clean, and exposes only qualified v0.2 tools", 
       capabilityData.capabilities.find((item) => item.capability_id === "node.update_text")?.available_via_mcp,
       true,
     );
+    assert.equal(
+      capabilityData.capabilities.find((item) => item.capability_id === "view.filter.literal")?.available_via_mcp,
+      true,
+    );
+    assert.equal(
+      capabilityData.capabilities.find((item) => item.capability_id === "node.conditional_style")?.available_via_mcp,
+      false,
+    );
   } finally {
     await client.close();
   }
 
   assert.equal(stderr, "");
+});
+
+test("a v0.3 capability downgrade removes organization tools and the version-pass claim", async () => {
+  const temporary = await mkdtemp(path.join(tmpdir(), "freeplane-mcp-gate-test-"));
+  const result = structuredClone(await loadProbeResult());
+  const capability = result.manifest.capabilities.find((item) => item.capability_id === "view.filter.literal");
+  assert.ok(capability);
+  capability.status = "needs_validation";
+  const server = createFreeplaneMcpServer(result, runtimeOptions(result.manifest, {
+    ...process.env,
+    FREEPLANE_MCP_RUNTIME_DIR: path.join(temporary, "missing-runtime"),
+    FREEPLANE_MCP_FILES: "[]",
+    FREEPLANE_MCP_ALLOWED_ROOTS: JSON.stringify([temporary]),
+  }));
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const client = new Client(
+    { name: "freeplane-mcp-gate-test", version: "0.3.0" },
+    { supportedProtocolVersions: ["2025-11-25"] },
+  );
+
+  try {
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+    assert.equal((await client.listTools()).tools.some((tool) => tool.name === "freeplane_view"), false);
+    const status = ResponseEnvelopeSchema.parse((await client.callTool({
+      name: "freeplane_status",
+      arguments: {},
+    })).structuredContent);
+    assert.equal((status.data as { qualification_passed: boolean }).qualification_passed, false);
+  } finally {
+    await client.close();
+    await server.close();
+    await rm(temporary, { recursive: true, force: true });
+  }
 });
 
 test("saved-file degradation lists, paginates, reads, and searches without claiming unsaved state", async () => {

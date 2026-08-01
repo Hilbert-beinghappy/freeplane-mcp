@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "stage": "v0.3",
+  "generated_at": "2026-08-01T12:03:33.190Z",
+  "passed": true,
+  "qualification_report": "v0.3-ff6dab76e60a",
+  "freeplane": {
+    "version": "1.13.3",
+    "build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822"
+  },
+  "addon_version": "0.3.0",
+  "server_version": "0.3.0",
+  "inherited_qualification_reports": [
+    {
+      "stage": "v0.2",
+      "qualification_report": "v0.2-ff6dab76e60a",
+      "sha256": "6bea8f66416f09aadb3212050f3c3879007bef62a6b650e017d77b402fb62f7d"
+    }
+  ],
+  "checks": [
+    {
+      "id": "build.candidate",
+      "status": "pass",
+      "evidence": "TypeScript build, Java 17 compile, JAR packaging, and BridgeSelfTest passed"
+    },
+    {
+      "id": "preservation.v0.2_gate_inherited",
+      "status": "pass",
+      "evidence": "v0.2 qualified report 6bea8f66416f09aadb3212050f3c3879007bef62a6b650e017d77b402fb62f7d remains the core edit evidence base"
+    },
+    {
+      "id": "isolation.bridge_identity",
+      "status": "pass",
+      "evidence": "isolated 0.3.0 bridge uses dynamic loopback binding and private discovery"
+    },
+    {
+      "id": "mcp.nine_tool_surface",
+      "status": "pass",
+      "evidence": "exact v0.3 nine-tool surface registered"
+    },
+    {
+      "id": "mcp.qualification_identity",
+      "status": "pass",
+      "evidence": "candidate manifest, server, bridge, and protocol identity agree"
+    },
+    {
+      "id": "fixture.base_31_nodes_33_relations",
+      "status": "pass",
+      "evidence": "synthetic baseline contains root + 30 nodes and exactly 33 native connectors"
+    },
+    {
+      "id": "transaction.organization_failure_points",
+      "status": "pass",
+      "evidence": "28/28 failure points restored canonical equality"
+    },
+    {
+      "id": "research.h2_exact_updates",
+      "status": "pass",
+      "evidence": "all four H2 findings and the validation branch match the frozen expected text"
+    },
+    {
+      "id": "research.35_nodes_33_relations",
+      "status": "pass",
+      "evidence": "organized map contains exactly 35 nodes and 33 relationships"
+    },
+    {
+      "id": "organization.five_group_styles",
+      "status": "pass",
+      "evidence": "five research sections have five distinct native background styles"
+    },
+    {
+      "id": "organization.native_summary_clone",
+      "status": "pass",
+      "evidence": "native summary group/first-group hooks and a two-member content clone read back correctly"
+    },
+    {
+      "id": "organization.safe_special_fields",
+      "status": "pass",
+      "evidence": "cloud, bookmark, arithmetic-only formula, and script-free reminder are stable in readback"
+    },
+    {
+      "id": "layout.no_severe_overlap",
+      "status": "pass",
+      "evidence": "worst section-heading overlap ratio 0.16"
+    },
+    {
+      "id": "view.literal_filter",
+      "status": "pass",
+      "evidence": "literal filter changed only view revision and hid non-matching branches"
+    },
+    {
+      "id": "view.filter_clear",
+      "status": "pass",
+      "evidence": "filter clear restored native unfiltered visibility without changing content revision"
+    },
+    {
+      "id": "history.one_undo_exact",
+      "status": "pass",
+      "evidence": "one undo restored the exact 31-node baseline"
+    },
+    {
+      "id": "history.one_redo_exact",
+      "status": "pass",
+      "evidence": "one redo restored the exact organized snapshot"
+    },
+    {
+      "id": "policy.executable_payloads_unavailable",
+      "status": "pass",
+      "evidence": "conditional scripts, CSS payloads, and reminder scripts remain outside the MCP surface"
+    },
+    {
+      "id": "isolation.fixture_unchanged",
+      "status": "pass",
+      "evidence": "qualification edits remained unsaved and source/working fixture bytes were unchanged"
+    },
+    {
+      "id": "mcp.stderr_private",
+      "status": "pass",
+      "evidence": "MCP and Freeplane stderr contain no token or research-map text"
+    }
+  ],
+  "metrics": {
+    "rollback_matrix_ms": 19729.35,
+    "section_overlap_max_ratio": 0.16
+  },
+  "hard_gate": {
+    "exact_tool_surface": true,
+    "research_map_35_33": true,
+    "h2_exact_updates": true,
+    "five_groups_distinct": true,
+    "native_summary_clone": true,
+    "literal_filter_only": true,
+    "no_severe_overlap": true,
+    "one_undo_redo_exact": true,
+    "failure_zero_partial_writes": true,
+    "executable_payloads_unavailable": true
+  }
+}

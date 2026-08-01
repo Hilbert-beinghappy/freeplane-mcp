@@ -10,10 +10,10 @@ const app = process.env.FREEPLANE_APP ?? "/Applications/Freeplane.app";
 const runtime = path.join(app, "Contents/runtime/Contents/Home/bin");
 const appRoot = path.join(app, "Contents/app");
 const cache = process.env.FREEPLANE_MCP_BUILD_DIR
-  ?? path.join(homedir(), "Library/Caches/Freeplane-MCP/build/v0.2");
+  ?? path.join(homedir(), "Library/Caches/Freeplane-MCP/build/v0.3");
 const classes = path.join(cache, "classes");
 const testClasses = path.join(cache, "test-classes");
-const jar = path.join(cache, "freeplane-mcp-bridge-0.2.0.jar");
+const jar = path.join(cache, "freeplane-mcp-bridge-0.3.0.jar");
 
 async function filesUnder(directory, suffix) {
   const found = [];
@@ -76,7 +76,7 @@ if (!stdout.includes("BridgeSelfTest: pass")) throw new Error("Bridge self-test 
 
 const metadata = {
   schema_version: 1,
-  addon_version: "0.2.0",
+  addon_version: "0.3.0",
   freeplane_app: app,
   source_count: mainSources.length,
   jar,

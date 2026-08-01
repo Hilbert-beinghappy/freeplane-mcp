@@ -34,7 +34,7 @@ import static org.freeplanemcp.bridge.BridgeSupport.BridgeException;
 import static org.freeplanemcp.bridge.BridgeSupport.map;
 
 public final class FreeplaneBridge implements AutoCloseable {
-    private static final String ADDON_VERSION = "0.2.0";
+    private static final String ADDON_VERSION = "0.3.0";
     private static final String QUALIFIED_BUILD_FINGERPRINT = "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822";
     private static final int REQUESTS_PER_SECOND = 240;
     private static FreeplaneBridge instance;
@@ -256,6 +256,9 @@ public final class FreeplaneBridge implements AutoCloseable {
         if (method.equals("POST") && path.equals("/v1/changes")) {
             return onMain(() -> registry.changes(body));
         }
+        if (method.equals("POST") && path.equals("/v1/view")) {
+            return onMain(() -> registry.withEventContext("mcp", null, () -> registry.view(body)));
+        }
         if (method.equals("POST") && path.equals("/v1/transactions/plan")) {
             return onMain(() -> transactions.plan(body));
         }
@@ -293,6 +296,20 @@ public final class FreeplaneBridge implements AutoCloseable {
             String mapId = BridgeSupport.requiredText(body, "map_id");
             int count = BridgeSupport.optionalInt(body, "count", 1, 1, 60_000);
             return onMain(() -> registry.qualificationFillEvents(mapId, count));
+        }
+        if (method.equals("POST") && path.equals("/v1/qualification/layout")) {
+            requireQualification();
+            String mapId = BridgeSupport.requiredText(body, "map_id");
+            var nodeIds = BridgeSupport.requiredArray(body, "node_ids");
+            if (nodeIds.isEmpty() || nodeIds.size() > 100) {
+                throw new BridgeException(400, "VALIDATION_ERROR", "node_ids must contain between 1 and 100 entries");
+            }
+            List<String> ids = new java.util.ArrayList<>();
+            for (JsonNode nodeId : nodeIds) {
+                if (!nodeId.isTextual()) throw new BridgeException(400, "VALIDATION_ERROR", "node_ids must contain strings");
+                ids.add(nodeId.textValue());
+            }
+            return onMain(() -> registry.qualificationLayout(mapId, ids));
         }
         if (method.equals("POST") && path.equals("/v1/qualification/restart")) {
             requireQualification();

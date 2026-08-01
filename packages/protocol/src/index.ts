@@ -299,6 +299,35 @@ const ConnectorPropertiesSchema = z
   })
   .strict();
 
+const SafeStyleSchema = z
+  .object({
+    background_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+    text_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+    bold: z.boolean().optional(),
+    italic: z.boolean().optional(),
+    font_size: z.int().min(6).max(144).optional(),
+    node_shape: z.enum(["FORK", "BUBBLE", "OVAL", "RECTANGLE", "WIDE_HEXAGON", "NARROW_HEXAGON"]).optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, { message: "style requires at least one property" });
+
+const SafeLayoutSchema = z
+  .object({
+    child_nodes: z.enum([
+      "TOPTOBOTTOM_BOTHSIDES_CENTERED",
+      "TOPTOBOTTOM_RIGHT_CENTERED",
+      "LEFTTORIGHT_BOTHSIDES_CENTERED",
+      "LEFTTORIGHT_BOTTOM_CENTERED",
+      "AUTO",
+    ]).optional(),
+    horizontal_shift: z.int().min(-10_000).max(10_000).optional(),
+    vertical_shift: z.int().min(-10_000).max(10_000).optional(),
+    minimal_distance_between_children: z.int().min(0).max(10_000).optional(),
+    base_distance_to_children: z.int().min(0).max(10_000).optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, { message: "layout requires at least one property" });
+
 export const ApplyOperationSchema = z.discriminatedUnion("op", [
   z.object({
     op: z.literal("create_node"),
@@ -389,6 +418,82 @@ export const ApplyOperationSchema = z.discriminatedUnion("op", [
   }).strict().refine((value) => new Set(value.connector_ids).size === value.connector_ids.length, {
     message: "connector_ids cannot contain duplicates",
   }),
+  z.object({
+    op: z.literal("clone_node"),
+    temp_id: TemporaryNodeIdSchema,
+    source_id: NodeReferenceSchema,
+    parent_id: NodeReferenceSchema,
+    index: z.int().nonnegative(),
+    with_subtree: z.literal(false).default(false),
+  }).strict(),
+  z.object({
+    op: z.literal("create_summary"),
+    temp_id: TemporaryNodeIdSchema,
+    parent_id: NodeReferenceSchema,
+    first_child_id: NodeReferenceSchema,
+    last_child_id: NodeReferenceSchema,
+    text: ContentTextSchema,
+  }).strict(),
+  z.object({
+    op: z.literal("set_free"),
+    node_id: NodeReferenceSchema,
+    free: z.boolean(),
+  }).strict(),
+  z.object({
+    op: z.literal("set_side"),
+    node_id: NodeReferenceSchema,
+    side: z.enum(["LEFT", "RIGHT"]),
+  }).strict(),
+  z.object({
+    op: z.literal("set_style"),
+    node_id: NodeReferenceSchema,
+    style: SafeStyleSchema,
+  }).strict(),
+  z.object({
+    op: z.literal("set_layout"),
+    node_id: NodeReferenceSchema,
+    layout: SafeLayoutSchema,
+  }).strict(),
+  z.object({
+    op: z.literal("set_cloud"),
+    node_id: NodeReferenceSchema,
+    enabled: z.boolean(),
+    shape: z.enum(["ARC", "STAR", "RECT", "ROUND_RECT"]).optional(),
+    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  }).strict(),
+  z.object({
+    op: z.literal("set_bookmark"),
+    node_id: NodeReferenceSchema,
+    bookmark: z.discriminatedUnion("action", [
+      z.object({ action: z.literal("remove") }).strict(),
+      z.object({
+        action: z.literal("set"),
+        name: z.string().min(1).max(256),
+        type: z.enum(["SELECT", "ROOT"]),
+      }).strict(),
+    ]),
+  }).strict(),
+  z.object({
+    op: z.literal("set_formula"),
+    node_id: NodeReferenceSchema,
+    expression: z.string().min(2).max(256).regex(/^=[0-9+\-*/().%\s]+$/).refine(
+      (value) => /\d/.test(value),
+      { message: "formula requires at least one digit" },
+    ),
+  }).strict(),
+  z.object({
+    op: z.literal("set_reminder"),
+    node_id: NodeReferenceSchema,
+    reminder: z.discriminatedUnion("action", [
+      z.object({ action: z.literal("remove") }).strict(),
+      z.object({
+        action: z.literal("set"),
+        at: z.iso.datetime(),
+        period_unit: z.enum(["MINUTE", "HOUR", "DAY", "WEEK", "MONTH", "YEAR"]),
+        period: z.int().min(1).max(10_000),
+      }).strict(),
+    ]),
+  }).strict(),
 ]);
 
 export const ConfirmationSchema = z
@@ -425,6 +530,28 @@ export const HistoryInputSchema = z
   .strict();
 
 export type HistoryInput = z.infer<typeof HistoryInputSchema>;
+
+export const ViewInputSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("apply_filter"),
+    map_id: z.string().min(1).max(512),
+    expected_view_revision: z.int().nonnegative(),
+    query: z.object({
+      mode: z.literal("literal"),
+      value: z.string().min(1).max(512),
+      case_sensitive: z.boolean().default(false),
+    }).strict(),
+    show_ancestors: z.boolean().default(true),
+    show_descendants: z.boolean().default(false),
+  }).strict(),
+  z.object({
+    action: z.literal("clear_filter"),
+    map_id: z.string().min(1).max(512),
+    expected_view_revision: z.int().nonnegative(),
+  }).strict(),
+]);
+
+export type ViewInput = z.infer<typeof ViewInputSchema>;
 
 export const TOOL_NAMES = [
   "freeplane_status",

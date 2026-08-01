@@ -31,6 +31,11 @@ public final class BridgeSelfTest {
         String firstHash = BridgeSupport.canonicalHash(BridgeSupport.JSON.readTree("{\"b\":2,\"a\":1}"));
         String secondHash = BridgeSupport.canonicalHash(BridgeSupport.JSON.readTree("{\"a\":1,\"b\":2}"));
         assert firstHash.equals(secondHash);
+        assert TransactionEngine.validArithmeticFormula("=(365 + 365) / 2");
+        assert TransactionEngine.validArithmeticFormula("=1.5%2");
+        assert !TransactionEngine.validArithmeticFormula("=node.text");
+        assert !TransactionEngine.validArithmeticFormula("=(1 + 2");
+        assert !TransactionEngine.validArithmeticFormula("=1++2");
 
         String cursor = BridgeSupport.cursor("instance", 42);
         assert BridgeSupport.decodeCursor(cursor, "instance") == 42;

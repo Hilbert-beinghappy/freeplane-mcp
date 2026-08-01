@@ -18,8 +18,8 @@ Implement the frozen Freeplane MCP specification sequentially, keeping every unq
 | 6B. v0.0B transaction and real-time bridge | complete | Isolated Freeplane proves live unsaved reads, event reconciliation, rollback equivalence, and one-undo semantics |
 | 7. v0.1 read-only real-time MCP | complete | Live list/read/selection/search/changes tools, file fallback, reconnect/full-resync, and 5,000-node latency gates pass |
 | 8. v0.2 core atomic editing | complete | Qualified create/update/move/connector/fold/delete/undo/redo tools are one undo unit with zero partial writes |
-| 9. v0.3 knowledge organization and style | in_progress | Qualified style/layout/summary/clone/filter/formula/reminder subset passes the 35-node/33-relation reconstruction gate |
-| 10. v0.4 document lifecycle, export, and protection | pending | Qualified lifecycle/export/encryption/file-write routes pass conflict, artifact, XXE, and unknown-XML preservation gates |
+| 9. v0.3 knowledge organization and style | complete | Qualified style/layout/summary/clone/filter/formula/reminder subset passes the 35-node/33-relation reconstruction gate |
+| 10. v0.4 document lifecycle, export, and protection | in_progress | Qualified lifecycle/export/encryption/file-write routes pass conflict, artifact, XXE, and unknown-XML preservation gates |
 | 11. v0.5 menu and macOS Accessibility | pending | Allow-listed GUI-only capabilities pass bilingual, focus, dialog-cancel, and postcondition qualification |
 | 12. v1.0 local stable release | pending | Installer/uninstaller, diagnostics, recovery, compatibility matrix, docs, and complete qualification package pass clean-profile and restart gates |
 
@@ -52,7 +52,12 @@ Implement the frozen Freeplane MCP specification sequentially, keeping every unq
 | Passive focus waiting could stall when isolated Freeplane never owned focus | 1 | Ask the isolated window and Freeplane map-view manager to recover focus before retrying the real editor action |
 | Restored-mtime clearing was unstable across the file watcher and timestamp precision | 1 | Keep the contract-relevant delayed detection assertion; restore the temporary mtime without treating immediate clearing as a v0.1 gate |
 | v0.2 redo rewrote volatile modified timestamps and left a metadata-only history entry | 1 | Exclude only volatile `timestamps.modified` from the logical snapshot hash, keep it fresh in reads, and skip bounded hash-invariant history noise inside one MCP history step |
+| v0.3 bookmark fields overwrote the compiled operation discriminator | 1 | Compile the public bookmark type as `bookmark_type` and retain `type=set_bookmark` |
+| Freeplane root-side runtime enum rejected `LEFT`/`RIGHT` aliases | 1 | Map the public contract to native `TOP_OR_LEFT`/`BOTTOM_OR_RIGHT` constants |
+| Public bookmark mutation was not on Freeplane's undo stack | 1 | Wrap the native bookmark controller in one `IActor` inside the compound transaction |
+| First v0.3 visual gate measured 37.88% section-heading overlap | 1 | Increase native per-section vertical shifts; the complete rerun measured 16% |
+| Filter activity was inferred from the action, then from the wrong extension/object-presence test | 2 | Read the active filter through `FilterController`, use its native active-state predicate, and rerun the full gate |
 
 ## Current gate
 
-v0.0A through v0.2 passed on the frozen Freeplane 1.13.3 build. Current gate: v0.3 knowledge organization and style. The v0.2 server exposes exactly the six read tools plus `freeplane_apply` and `freeplane_history`; all v0.3 capabilities remain unavailable until their gate passes.
+v0.0A through v0.3 passed on the frozen Freeplane 1.13.3 build. Current gate: v0.4 document lifecycle, export, and protection. The v0.3 server exposes exactly nine tools; executable conditional styles, raw CSS/scripts, document writes, export, and GUI automation remain unavailable.

@@ -1,6 +1,6 @@
 {
   "name": "freeplane-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -23,6 +23,7 @@
     "qualify:v0.0b": "node scripts/qualify_v0_0b.mjs",
     "qualify:v0.1": "node scripts/qualify_v0_1.mjs",
     "qualify:v0.2": "node scripts/qualify_v0_2.mjs",
+    "qualify:v0.3": "node scripts/qualify_v0_3.mjs",
     "start": "node packages/server/dist/index.js"
   },
   "devDependencies": {

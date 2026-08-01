@@ -63,6 +63,24 @@ test("v0.2 operation compiler is narrow and risk classification is conservative"
   } }));
 });
 
+test("v0.3 knowledge-map operations compile without executable payloads", () => {
+  const compiled = compileOperations([
+    { op: "clone_node", temp_id: "$clone", source_id: "A", parent_id: "ROOT", index: 2, with_subtree: false },
+    { op: "set_style", node_id: "$clone", style: { background_color: "#112233", bold: true } },
+    { op: "set_formula", node_id: "$clone", expression: "=(365 + 365) / 2" },
+    { op: "set_bookmark", node_id: "$clone", bookmark: { action: "set", name: "evidence", type: "SELECT" } },
+    { op: "set_reminder", node_id: "$clone", reminder: { action: "remove" } },
+  ]);
+  assert.deepEqual(compiled, [
+    { type: "clone_node", temp_id: "$clone", source: "A", parent: "ROOT", position: 2, with_subtree: false },
+    { type: "set_style", node: "$clone", style: { background_color: "#112233", bold: true } },
+    { type: "set_formula", node: "$clone", expression: "=(365 + 365) / 2" },
+    { type: "set_bookmark", node: "$clone", action: "set", name: "evidence", bookmark_type: "SELECT" },
+    { type: "set_reminder", node: "$clone", action: "remove" },
+  ]);
+  assert.equal(JSON.stringify(compiled).includes("script"), false);
+});
+
 test("confirmation is one-time and bound to bridge, map, revisions, and operations", () => {
   const store = new ConfirmationStore();
   const binding = {

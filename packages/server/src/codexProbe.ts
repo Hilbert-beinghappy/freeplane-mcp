@@ -16,6 +16,7 @@ const EXPECTED_TOOLS = [
   "freeplane_read",
   "freeplane_search",
   "freeplane_status",
+  "freeplane_view",
 ];
 
 export interface CodexHostProbeResult {

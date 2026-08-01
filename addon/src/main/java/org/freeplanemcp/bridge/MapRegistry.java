@@ -7,16 +7,23 @@ import org.freeplane.api.Connector;
 import org.freeplane.api.Controller;
 import org.freeplane.api.MindMap;
 import org.freeplane.api.Node;
+import org.freeplane.api.NodeCondition;
 import org.freeplane.api.NodeChangeListener;
+import org.freeplane.features.filter.Filter;
+import org.freeplane.features.filter.FilterController;
+import org.freeplane.features.map.AlwaysUnfoldedNode;
 import org.freeplane.features.map.IMapChangeListener;
 import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeDeletionEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.NodeMoveEvent;
+import org.freeplane.features.map.SummaryNode;
 import org.freeplane.plugin.script.proxy.AbstractProxy;
+import org.freeplane.view.swing.map.NodeView;
 
 import javax.swing.SwingUtilities;
+import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -346,6 +353,70 @@ final class MapRegistry implements AutoCloseable {
                 "truncated", matches.size() == limit && !queue.isEmpty());
     }
 
+    Map<String, Object> view(JsonNode request) {
+        assertMainThread();
+        State state = requireState(BridgeSupport.requiredText(request, "map_id"));
+        reconcile(state, "snapshot.reconciled", List.of("view_precondition"), List.of());
+        reconcileView(state);
+        if (activeStateWithoutRefresh() != state) {
+            throw new BridgeException(409, "SELECTION_CONFLICT", "View changes require the active Freeplane map");
+        }
+        long expected = BridgeSupport.requiredNonNegativeLong(request, "expected_view_revision");
+        if (state.viewRevision != expected) {
+            throw new BridgeException(409, "SELECTION_CONFLICT", "Map view revision changed", map(
+                    "expected_view_revision", expected,
+                    "actual_view_revision", state.viewRevision));
+        }
+        String action = BridgeSupport.requiredText(request, "action");
+        long before = state.viewRevision;
+        if (action.equals("apply_filter")) {
+            String value = BridgeSupport.requiredText(request, "value");
+            if (value.length() > 512) throw new BridgeException(413, "LIMIT_EXCEEDED", "filter value exceeds 512 characters");
+            boolean caseSensitive = request.path("case_sensitive").asBoolean(false);
+            boolean showAncestors = request.path("show_ancestors").asBoolean(true);
+            boolean showDescendants = request.path("show_descendants").asBoolean(false);
+            String needle = caseSensitive ? value : value.toLowerCase(Locale.ROOT);
+            NodeCondition condition = node -> {
+                String text = node.getText();
+                return (caseSensitive ? text : text.toLowerCase(Locale.ROOT)).contains(needle);
+            };
+            state.map.setFilter(showAncestors, showDescendants, condition);
+        } else if (action.equals("clear_filter")) {
+            state.map.setFilter((NodeCondition) null);
+        } else {
+            throw new BridgeException(400, "VALIDATION_ERROR", "Unsupported view action: " + action);
+        }
+        reconcileView(state);
+        if (state.viewRevision == before) {
+            state.viewSignature = viewSignature(state);
+            state.viewRevision++;
+            appendEvent(state, "view.filter", sourceFor(state), List.of(), List.of("filter"), transactionId);
+        }
+
+        int total = 0;
+        int visible = 0;
+        Deque<Node> queue = new ArrayDeque<>();
+        queue.add(state.map.getRoot());
+        while (!queue.isEmpty()) {
+            Node node = queue.removeFirst();
+            if (++total > MAX_NODES) throw new BridgeException(413, "LIMIT_EXCEEDED", "map exceeds 10000 nodes");
+            if (node.isVisible()) visible++;
+            queue.addAll(node.getChildren());
+        }
+        FilterController filterController = FilterController.getCurrentFilterController();
+        if (filterController == null) {
+            throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Native filter controller is unavailable");
+        }
+        return map(
+                "map_id", state.mapId,
+                "action", action,
+                "content_revision", state.contentRevision,
+                "view_revision", state.viewRevision,
+                "filter_active", filterController.isFilterActive(),
+                "visible_node_count", visible,
+                "total_node_count", total);
+    }
+
     Map<String, Object> changes(JsonNode request) {
         assertMainThread();
         String cursor = request.path("cursor").isTextual() ? request.path("cursor").textValue() : null;
@@ -481,6 +552,18 @@ final class MapRegistry implements AutoCloseable {
                         "uri", linkUri == null ? null : linkUri.toString(),
                         "target_node_id", linkTarget == null ? null : linkTarget.getId());
         var style = node.getStyle();
+        var geometry = node.getGeometry();
+        var cloud = node.getCloud();
+        var bookmark = node.getBookmark();
+        var reminder = node.getReminder();
+        var remindAt = reminder.getRemindAt();
+        String rawText = node.getText();
+        Object formula = rawText.startsWith("=")
+                ? map("expression", rawText, "displayed", node.getDisplayedText())
+                : null;
+        List<String> contentCloneIds = node.getNodesSharingContent().stream().map(Node::getId).sorted().toList();
+        List<String> subtreeCloneIds = node.getNodesSharingContentAndSubtree().stream().map(Node::getId).sorted().toList();
+        NodeModel model = nodeModelOf(node);
         var created = node.getCreatedAt();
         var modified = node.getLastModifiedAt();
         var tags = node.getTags().getTags();
@@ -493,7 +576,7 @@ final class MapRegistry implements AutoCloseable {
 
         return map(
                 "id", node.getId(),
-                "text", node.getText(),
+                "text", rawText,
                 "details", node.getDetailsText(),
                 "note", node.getNoteText(),
                 "attributes", attributes,
@@ -503,11 +586,42 @@ final class MapRegistry implements AutoCloseable {
                 "style", map(
                         "name", style.getName(),
                         "background_color", style.getBackgroundColorCode(),
-                        "text_color", style.getTextColorCode()),
+                        "text_color", style.getTextColorCode(),
+                        "bold", style.getFont().isBold(),
+                        "italic", style.getFont().isItalic(),
+                        "font_size", style.getFont().getSize(),
+                        "node_shape", String.valueOf(geometry.getShape())),
                 "layout", map(
                         "orientation", String.valueOf(node.getLayoutOrientation()),
                         "child_nodes", String.valueOf(node.getChildNodesLayout()),
-                        "free", node.isFree()),
+                        "side_at_root", String.valueOf(node.getSideAtRoot()),
+                        "free", node.isFree(),
+                        "horizontal_shift", node.getHorizontalShift(),
+                        "vertical_shift", node.getVerticalShift(),
+                        "minimal_distance_between_children", node.getMinimalDistanceBetweenChildren(),
+                        "base_distance_to_children", node.getBaseDistanceToChildrenAsLength().toBaseUnitsRounded()),
+                "cloud", map(
+                        "enabled", cloud.getEnabled(),
+                        "shape", cloud.getShape(),
+                        "color", cloud.getColorCode()),
+                "bookmark", bookmark == null ? null : map(
+                        "name", bookmark.getName(),
+                        "type", bookmark.getType().name()),
+                "reminder", remindAt == null ? null : map(
+                        "at", remindAt.toInstant().toString(),
+                        "period_unit", reminder.getPeriodUnit(),
+                        "period", reminder.getPeriod(),
+                        "script_present", reminder.getScript() != null && !reminder.getScript().isBlank()),
+                "formula", formula,
+                "clones", map(
+                        "content_peer_count", node.getCountNodesSharingContent(),
+                        "subtree_peer_count", node.getCountNodesSharingContentAndSubtree(),
+                        "content_peer_node_ids", contentCloneIds,
+                        "subtree_peer_node_ids", subtreeCloneIds),
+                "summary", map(
+                        "summary_node", SummaryNode.isSummaryNode(model),
+                        "first_group_node", SummaryNode.isFirstGroupNode(model),
+                        "always_unfolded", AlwaysUnfoldedNode.isAlwaysUnfolded(model)),
                 "timestamps", map(
                         "created", created == null ? null : created.toInstant().toString(),
                         "modified", modified == null ? null : modified.toInstant().toString()),
@@ -515,6 +629,13 @@ final class MapRegistry implements AutoCloseable {
                 "folded", node.isFolded(),
                 "connectors", connectors,
                 "children", children);
+    }
+
+    private static NodeModel nodeModelOf(Node node) {
+        if (!(node instanceof AbstractProxy<?> proxy) || !(proxy.getDelegate() instanceof NodeModel model)) {
+            throw new BridgeException(503, "VERSION_UNSUPPORTED", "Freeplane node proxy is incompatible with the qualified build");
+        }
+        return model;
     }
 
     private static Object scalar(Object value) {
@@ -618,12 +739,38 @@ final class MapRegistry implements AutoCloseable {
         return map("event_count", events.size(), "event_bytes", eventBytes, "cursor", BridgeSupport.cursor(instanceId, eventSequence));
     }
 
+    Map<String, Object> qualificationLayout(String mapId, List<String> nodeIds) {
+        assertMainThread();
+        State state = requireState(mapId);
+        List<Map<String, Object>> bounds = new ArrayList<>();
+        for (String nodeId : nodeIds) {
+            Node node = requireNode(state, nodeId);
+            NodeView view = nodeModelOf(node).getViewers().stream()
+                    .filter(NodeView.class::isInstance)
+                    .map(NodeView.class::cast)
+                    .filter(NodeView::isShowing)
+                    .findFirst()
+                    .orElseThrow(() -> new BridgeException(503, "CAPABILITY_UNVERIFIED", "Visible node bounds are unavailable"));
+            Rectangle rectangle = SwingUtilities.convertRectangle(
+                    view,
+                    new Rectangle(0, 0, view.getWidth(), view.getHeight()),
+                    view.getMap());
+            bounds.add(map(
+                    "node_id", nodeId,
+                    "x", rectangle.x,
+                    "y", rectangle.y,
+                    "width", rectangle.width,
+                    "height", rectangle.height));
+        }
+        return map("map_id", mapId, "bounds", bounds);
+    }
+
     private void reconcileView(State state) {
         String signature = viewSignature(state);
         if (signature.equals(state.viewSignature)) return;
         state.viewSignature = signature;
         state.viewRevision++;
-        appendEvent(state, "view.updated", sourceFor(state), selectedIds(state), List.of("selection", "view_root", "zoom"), transactionId);
+        appendEvent(state, "view.updated", sourceFor(state), selectedIds(state), List.of("selection", "view_root", "zoom", "filter"), transactionId);
     }
 
     private String viewSignature(State state) {
@@ -632,7 +779,11 @@ final class MapRegistry implements AutoCloseable {
         StringBuilder value = new StringBuilder("active|");
         for (Node node : controller.getSelecteds()) value.append(node.getId()).append(',');
         Node root = controller.getViewRoot();
-        return value.append('|').append(root == null ? "" : root.getId()).append('|').append(controller.getZoom()).toString();
+        Filter filter = FilterController.getFilter(state.model);
+        return value.append('|').append(root == null ? "" : root.getId())
+                .append('|').append(controller.getZoom())
+                .append('|').append(filter == null ? "none" : filter.hashCode())
+                .toString();
     }
 
     private State activeStateWithoutRefresh() {

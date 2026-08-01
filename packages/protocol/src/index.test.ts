@@ -9,6 +9,7 @@ import {
   ResponseEnvelopeSchema,
   SearchInputSchema,
   TOOL_NAMES,
+  ViewInputSchema,
   emptyEvidence,
 } from "./index.js";
 
@@ -67,7 +68,7 @@ test("v0.1 read-only inputs are bounded and reject unqualified search modes", ()
   assert.equal(ChangesInputSchema.safeParse({ wait_ms: 751 }).success, false);
 });
 
-test("v0.2 atomic edit union accepts only the qualified core operations", () => {
+test("v0.3 atomic edit union accepts the qualified core and knowledge-map operations", () => {
   const base = {
     map_id: "map",
     expected_content_revision: 4,
@@ -89,12 +90,45 @@ test("v0.2 atomic edit union accepts only the qualified core operations", () => 
     { op: "add_connector", source_id: "A", target_id: "B", properties: { shape: "LINE" } },
     { op: "update_connector", connector_id: `fpconn:${"a".repeat(64)}`, properties: { width: 2 } },
     { op: "remove_connector", connector_ids: [`fpconn:${"b".repeat(64)}`] },
+    { op: "clone_node", temp_id: "$clone", source_id: "A", parent_id: "ROOT", index: 0, with_subtree: false },
+    { op: "create_summary", temp_id: "$summary", parent_id: "ROOT", first_child_id: "A", last_child_id: "B", text: "summary" },
+    { op: "set_free", node_id: "A", free: true },
+    { op: "set_side", node_id: "A", side: "LEFT" },
+    { op: "set_style", node_id: "A", style: { background_color: "#123456", bold: true, font_size: 18 } },
+    { op: "set_layout", node_id: "A", layout: { child_nodes: "AUTO", horizontal_shift: 12 } },
+    { op: "set_cloud", node_id: "A", enabled: true, shape: "ARC", color: "#ABCDEF" },
+    { op: "set_bookmark", node_id: "A", bookmark: { action: "set", name: "evidence", type: "SELECT" } },
+    { op: "set_formula", node_id: "A", expression: "=(365 + 365) / 2" },
+    { op: "set_reminder", node_id: "A", reminder: { action: "set", at: "2030-01-01T00:00:00.000Z", period_unit: "YEAR", period: 1 } },
   ];
   for (const operation of operations) {
     assert.equal(ApplyInputSchema.safeParse({ ...base, operations: [operation] }).success, true, operation.op);
   }
   assert.equal(ApplyInputSchema.safeParse({ ...base, operations: [{ op: "update_content", node_id: "A" }] }).success, false);
-  assert.equal(ApplyInputSchema.safeParse({ ...base, operations: [{ op: "set_style", node_id: "A" }] }).success, false);
+  assert.equal(ApplyInputSchema.safeParse({ ...base, operations: [{ op: "set_style", node_id: "A", style: {} }] }).success, false);
+  assert.equal(ApplyInputSchema.safeParse({ ...base, operations: [{ op: "set_formula", node_id: "A", expression: "=node.text" }] }).success, false);
+  assert.equal(ApplyInputSchema.safeParse({ ...base, operations: [{ op: "clone_node", temp_id: "$x", source_id: "A", parent_id: "ROOT", index: 0, with_subtree: true }] }).success, false);
   assert.equal(ApplyInputSchema.safeParse({ ...base, operations: [operations[0]], confirmation: true }).success, false);
   assert.equal(ApplyInputSchema.safeParse({ ...base, idempotency_key: "not-a-uuid", operations: [operations[0]] }).success, false);
+});
+
+test("v0.3 view contract allows literal filtering only", () => {
+  assert.equal(ViewInputSchema.safeParse({
+    action: "apply_filter",
+    map_id: "map",
+    expected_view_revision: 2,
+    query: { mode: "literal", value: "validation" },
+  }).success, true);
+  assert.equal(ViewInputSchema.safeParse({
+    action: "apply_filter",
+    map_id: "map",
+    expected_view_revision: 2,
+    query: { mode: "regex", value: ".*" },
+  }).success, false);
+  assert.equal(ViewInputSchema.safeParse({
+    action: "clear_filter",
+    map_id: "map",
+    expected_view_revision: 2,
+    query: { mode: "literal", value: "ignored" },
+  }).success, false);
 });

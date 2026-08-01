@@ -83,3 +83,13 @@
 - Ten real 100-operation commits measured p50 137.27 ms and p95/max 199.21 ms, below the 2,000 ms gate.
 - Freeplane rewrites `timestamps.modified` during redo and may record a metadata-only history item. Logical snapshot hashes exclude only this volatile field while read responses retain its current value; one MCP history step skips at most eight hash-invariant metadata entries before returning verified logical readback.
 - Idempotency state is atomic `0600` under a `0700` runtime directory, bounded to 10,000 entries/24 hours, stores payload hashes and result envelopes rather than request content, and leaves uncertain outcomes pending for reconciliation.
+
+## v0.3 implementation evidence
+
+- The MCP surface is exactly nine tools: the v0.2 surface plus revision-guarded literal `freeplane_view` filtering.
+- The qualified atomic subset covers safe native style/layout, root side and free placement, content clones without subtrees, native summaries, clouds, bookmarks, arithmetic-only formulas, and script-free reminders.
+- Public bookmark mutation bypasses Freeplane's undo stack, so the bridge wraps the native bookmark controller in an `IActor`; all 28/28 injected organization failure points then restored canonical equality.
+- The isolated synthetic research map passed the frozen 35-node/33-relation gate, exact five H2 updates, five distinct section styles, native summary/clone readback, and one undo/redo equality.
+- Swing component bounds measured a worst section-heading overlap ratio of 0.16 after native spacing adjustment, below the 0.20 severe-overlap gate.
+- Conditional-style expressions, raw CSS, reminder scripts, and arbitrary formulas remain explicitly unsupported rather than being passed through as executable strings.
+- Version qualification is aggregate: a v0.3 capability downgrade removes the organization tool and makes `qualification_passed=false`; literal-filter activity is read from Freeplane's native filter controller rather than inferred from the requested action.

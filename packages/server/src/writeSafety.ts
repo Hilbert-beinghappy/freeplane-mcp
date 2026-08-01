@@ -87,6 +87,64 @@ export function compileOperations(operations: ApplyOperation[]): Array<Record<st
       case "remove_connector":
         compiled.push(...operation.connector_ids.map((connector_id) => ({ type: "remove_connector", connector_id })));
         break;
+      case "clone_node":
+        compiled.push({
+          type: "clone_node",
+          temp_id: operation.temp_id,
+          source: operation.source_id,
+          parent: operation.parent_id,
+          position: operation.index,
+          with_subtree: false,
+        });
+        break;
+      case "create_summary":
+        compiled.push({
+          type: "create_summary",
+          temp_id: operation.temp_id,
+          parent: operation.parent_id,
+          first_child: operation.first_child_id,
+          last_child: operation.last_child_id,
+          text: operation.text,
+        });
+        break;
+      case "set_free":
+        compiled.push({ type: "set_free", node: operation.node_id, value: operation.free });
+        break;
+      case "set_side":
+        compiled.push({ type: "set_side", node: operation.node_id, side: operation.side });
+        break;
+      case "set_style":
+        compiled.push({ type: "set_style", node: operation.node_id, style: operation.style });
+        break;
+      case "set_layout":
+        compiled.push({ type: "set_layout", node: operation.node_id, layout: operation.layout });
+        break;
+      case "set_cloud":
+        compiled.push({
+          type: "set_cloud",
+          node: operation.node_id,
+          enabled: operation.enabled,
+          ...(operation.shape === undefined ? {} : { shape: operation.shape }),
+          ...(operation.color === undefined ? {} : { color: operation.color }),
+        });
+        break;
+      case "set_bookmark":
+        compiled.push(operation.bookmark.action === "remove"
+          ? { type: "set_bookmark", node: operation.node_id, action: "remove" }
+          : {
+              type: "set_bookmark",
+              node: operation.node_id,
+              action: "set",
+              name: operation.bookmark.name,
+              bookmark_type: operation.bookmark.type,
+            });
+        break;
+      case "set_formula":
+        compiled.push({ type: "set_formula", node: operation.node_id, expression: operation.expression });
+        break;
+      case "set_reminder":
+        compiled.push({ type: "set_reminder", node: operation.node_id, ...operation.reminder });
+        break;
     }
   }
   if (compiled.length > 500) {

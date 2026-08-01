@@ -4,9 +4,23 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import org.freeplane.api.Connector;
+import org.freeplane.api.ChildNodesLayout;
 import org.freeplane.api.Controller;
 import org.freeplane.api.Node;
+import org.freeplane.api.NodeShape;
+import org.freeplane.api.Side;
+import org.freeplane.core.undo.IActor;
 import org.freeplane.core.undo.IUndoHandler;
+import org.freeplane.features.bookmarks.mindmapmode.BookmarksController;
+import org.freeplane.features.bookmarks.mindmapmode.NodeBookmarkDescriptor;
+import org.freeplane.features.map.AlwaysUnfoldedNode;
+import org.freeplane.features.map.FirstGroupNode;
+import org.freeplane.features.map.FirstGroupNodeFlag;
+import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.SummaryLevels;
+import org.freeplane.features.map.SummaryNode;
+import org.freeplane.features.map.SummaryNodeFlag;
+import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.plugin.script.proxy.AbstractProxy;
 
@@ -50,7 +64,17 @@ final class TransactionEngine {
             "add_connector",
             "update_connector",
             "remove_connector",
-            "delete_node");
+            "delete_node",
+            "clone_node",
+            "create_summary",
+            "set_free",
+            "set_side",
+            "set_style",
+            "set_layout",
+            "set_cloud",
+            "set_bookmark",
+            "set_formula",
+            "set_reminder");
 
     private final Controller controller;
     private final MapRegistry registry;
@@ -698,6 +722,119 @@ final class TransactionEngine {
                 require(findConnectors(state, operation.path("connector_id").textValue()).isEmpty(),
                         "remove_connector readback diverged");
             }
+            case "clone_node" -> {
+                Node source = resolve(state, operation.path("source").textValue(), temporary);
+                Node parent = resolve(state, operation.path("parent").textValue(), temporary);
+                int position = operation.path("position").intValue();
+                Node clone = parent.appendAsCloneWithoutSubtree(source);
+                if (parent.getChildPosition(clone) != position) clone.moveTo(parent, position);
+                temporary.put(operation.path("temp_id").textValue(), clone);
+                require(parent.getChildPosition(clone) == position
+                        && clone.getParent() != null
+                        && clone.getParent().getId().equals(parent.getId())
+                        && clone.getCountNodesSharingContent() >= 1
+                        && clone.getNodesSharingContent().stream().anyMatch(node -> node.getId().equals(source.getId())),
+                        "clone_node readback diverged");
+            }
+            case "create_summary" -> {
+                Node parent = resolve(state, operation.path("parent").textValue(), temporary);
+                Node first = resolve(state, operation.path("first_child").textValue(), temporary);
+                Node last = resolve(state, operation.path("last_child").textValue(), temporary);
+                Node summary = createSummary(state, parent, first, last, operation.path("text").textValue());
+                temporary.put(operation.path("temp_id").textValue(), summary);
+                NodeModel summaryModel = modelOf(summary);
+                require(summary.getParent() != null
+                        && SummaryNode.isSummaryNode(modelOf(summary.getParent()))
+                        && summaryModel.getParentNode() != null,
+                        "create_summary readback diverged");
+            }
+            case "set_free" -> {
+                Node node = resolve(state, operation.path("node").textValue(), temporary);
+                boolean value = operation.path("value").booleanValue();
+                node.setFree(value);
+                require(node.isFree() == value, "set_free readback diverged");
+            }
+            case "set_side" -> {
+                Node node = resolve(state, operation.path("node").textValue(), temporary);
+                Side side = operation.path("side").textValue().equals("LEFT")
+                        ? Side.TOP_OR_LEFT
+                        : Side.BOTTOM_OR_RIGHT;
+                node.setSideAtRoot(side);
+                require(node.getSideAtRoot() == side, "set_side readback diverged");
+            }
+            case "set_style" -> {
+                Node node = resolve(state, operation.path("node").textValue(), temporary);
+                JsonNode style = operation.path("style");
+                if (style.has("background_color")) node.getStyle().setBackgroundColorCode(style.path("background_color").textValue());
+                if (style.has("text_color")) node.getStyle().setTextColorCode(style.path("text_color").textValue());
+                if (style.has("bold")) node.getStyle().getFont().setBold(style.path("bold").booleanValue());
+                if (style.has("italic")) node.getStyle().getFont().setItalic(style.path("italic").booleanValue());
+                if (style.has("font_size")) node.getStyle().getFont().setSize(style.path("font_size").intValue());
+                if (style.has("node_shape")) node.getGeometry().setShape(NodeShape.valueOf(style.path("node_shape").textValue()));
+                require(styleEqual(node, style), "set_style readback diverged");
+            }
+            case "set_layout" -> {
+                Node node = resolve(state, operation.path("node").textValue(), temporary);
+                JsonNode layout = operation.path("layout");
+                if (layout.has("child_nodes")) node.setChildNodesLayout(ChildNodesLayout.valueOf(layout.path("child_nodes").textValue()));
+                if (layout.has("horizontal_shift")) node.setHorizontalShift(layout.path("horizontal_shift").intValue());
+                if (layout.has("vertical_shift")) node.setVerticalShift(layout.path("vertical_shift").intValue());
+                if (layout.has("minimal_distance_between_children")) {
+                    node.setMinimalDistanceBetweenChildren(layout.path("minimal_distance_between_children").intValue());
+                }
+                if (layout.has("base_distance_to_children")) {
+                    node.setBaseDistanceToChildren(layout.path("base_distance_to_children").intValue());
+                }
+                require(layoutEqual(node, layout), "set_layout readback diverged");
+            }
+            case "set_cloud" -> {
+                Node node = resolve(state, operation.path("node").textValue(), temporary);
+                var cloud = node.getCloud();
+                if (operation.has("shape")) cloud.setShape(operation.path("shape").textValue());
+                if (operation.has("color")) cloud.setColorCode(operation.path("color").textValue());
+                cloud.setEnabled(operation.path("enabled").booleanValue());
+                require(cloud.getEnabled() == operation.path("enabled").booleanValue()
+                        && (!operation.has("shape") || operation.path("shape").textValue().equals(cloud.getShape()))
+                        && (!operation.has("color") || operation.path("color").textValue().equalsIgnoreCase(cloud.getColorCode())),
+                        "set_cloud readback diverged");
+            }
+            case "set_bookmark" -> {
+                Node node = resolve(state, operation.path("node").textValue(), temporary);
+                String action = operation.path("action").textValue();
+                setBookmarkTransactional(state, node, operation);
+                var bookmark = node.getBookmark();
+                require(action.equals("remove")
+                                ? bookmark == null
+                                : bookmark != null
+                                    && operation.path("name").textValue().equals(bookmark.getName())
+                                    && operation.path("bookmark_type").textValue().equals(bookmark.getType().name()),
+                        "set_bookmark readback diverged");
+            }
+            case "set_formula" -> {
+                Node node = resolve(state, operation.path("node").textValue(), temporary);
+                String expression = operation.path("expression").textValue();
+                node.setText(expression);
+                require(expression.equals(node.getText()), "set_formula readback diverged");
+            }
+            case "set_reminder" -> {
+                Node node = resolve(state, operation.path("node").textValue(), temporary);
+                String action = operation.path("action").textValue();
+                if (action.equals("remove")) {
+                    node.getReminder().remove();
+                    require(node.getReminder().getRemindAt() == null, "set_reminder remove readback diverged");
+                } else {
+                    Instant at = Instant.parse(operation.path("at").textValue());
+                    String unit = operation.path("period_unit").textValue();
+                    int period = operation.path("period").intValue();
+                    node.getReminder().createOrReplace(java.util.Date.from(at), unit, period);
+                    require(node.getReminder().getRemindAt() != null
+                                    && node.getReminder().getRemindAt().toInstant().equals(at)
+                                    && unit.equals(node.getReminder().getPeriodUnit())
+                                    && Integer.valueOf(period).equals(node.getReminder().getPeriod())
+                                    && (node.getReminder().getScript() == null || node.getReminder().getScript().isBlank()),
+                            "set_reminder readback diverged");
+                }
+            }
             case "delete_node" -> {
                 Node node = resolve(state, operation.path("node").textValue(), temporary);
                 require(!node.isRoot(), "root node cannot be deleted");
@@ -709,9 +846,129 @@ final class TransactionEngine {
         }
     }
 
+    private static void setBookmarkTransactional(MapRegistry.State state, Node node, JsonNode operation) {
+        if (!(node instanceof AbstractProxy<?> proxy)) {
+            throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Qualified bookmark internals are unavailable");
+        }
+        MModeController mode = proxy.getModeController();
+        BookmarksController bookmarks = mode.getExtension(BookmarksController.class);
+        NodeModel model = modelOf(node);
+        if (bookmarks == null) throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Bookmark controller is unavailable");
+        var mapBookmarks = bookmarks.getBookmarks(state.model);
+        var previous = mapBookmarks.getBookmark(model.getID());
+        NodeBookmarkDescriptor previousDescriptor = previous == null ? null : previous.getDescriptor();
+        int previousPosition = previous == null ? -1 : bookmarks.findBookmarkPosition(mapBookmarks.getBookmarks(), previous);
+        if (previous != null && previousPosition < 0) {
+            throw new BridgeException(500, "FREEPLANE_ERROR", "Existing bookmark position is inconsistent");
+        }
+        NodeBookmarkDescriptor desired = operation.path("action").textValue().equals("remove")
+                ? null
+                : new NodeBookmarkDescriptor(
+                        operation.path("name").textValue(),
+                        operation.path("bookmark_type").textValue().equals("ROOT"));
+        mode.execute(new IActor() {
+            @Override
+            public void act() {
+                bookmarks.removeBookmark(model);
+                if (desired != null) bookmarks.addBookmark(model, desired);
+            }
+
+            @Override
+            public String getDescription() {
+                return "set bookmark";
+            }
+
+            @Override
+            public void undo() {
+                bookmarks.removeBookmark(model);
+                if (previousDescriptor != null) {
+                    bookmarks.addBookmark(model, previousDescriptor);
+                    bookmarks.moveBookmark(model, previousPosition);
+                }
+            }
+        }, state.model);
+    }
+
+    private Node createSummary(MapRegistry.State state, Node parent, Node first, Node last, String text) {
+        NodeModel rootModel = modelOf(state.map.getRoot());
+        NodeModel parentModel = modelOf(parent);
+        NodeModel firstModel = modelOf(first);
+        NodeModel lastModel = modelOf(last);
+        int firstIndex = parentModel.getIndex(firstModel);
+        int lastIndex = parentModel.getIndex(lastModel);
+        boolean topOrLeft = first.isTopOrLeft();
+        SummaryLevels levels = new SummaryLevels(rootModel, parentModel);
+        require(firstIndex >= 0 && lastIndex >= firstIndex && levels.canInsertSummaryNode(firstIndex, lastIndex, topOrLeft),
+                "summary range is not valid in the current native layout");
+
+        if (!(parent instanceof AbstractProxy<?> proxy)
+                || !(proxy.getModeController().getMapController() instanceof MMapController mapController)) {
+            throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Native summary controller is unavailable");
+        }
+        MModeController mode = proxy.getModeController();
+        SummaryNode summaryHook = mode.getExtension(SummaryNode.class);
+        AlwaysUnfoldedNode unfoldedHook = mode.getExtension(AlwaysUnfoldedNode.class);
+        FirstGroupNode firstGroupHook = mode.getExtension(FirstGroupNode.class);
+        if (summaryHook == null || unfoldedHook == null || firstGroupHook == null) {
+            throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Native summary hooks are unavailable");
+        }
+
+        NodeModel summaryGroup = mapController.addNewNode(parentModel, lastIndex + 1, lastModel.getSide());
+        if (summaryGroup == null) throw new BridgeException(422, "POSTCONDITION_FAILED", "Native summary group was not created");
+        summaryHook.undoableActivateHook(summaryGroup, SummaryNodeFlag.SUMMARY);
+        unfoldedHook.undoableActivateHook(summaryGroup, unfoldedHook);
+        if (SummaryNode.isSummaryNode(firstModel)) {
+            firstGroupHook.undoableActivateHook(firstModel, FirstGroupNodeFlag.FIRST_GROUP);
+        } else {
+            NodeModel firstGroup = mapController.addNewNode(parentModel, firstIndex, node -> {
+                node.setSide(summaryGroup.getSide());
+                node.addExtension(FirstGroupNodeFlag.FIRST_GROUP);
+            });
+            if (firstGroup == null) throw new BridgeException(422, "POSTCONDITION_FAILED", "Native first-group marker was not created");
+        }
+        NodeModel summaryContent = mapController.addNewNode(summaryGroup, 0, NodeModel.Side.DEFAULT);
+        if (summaryContent == null) throw new BridgeException(422, "POSTCONDITION_FAILED", "Native summary content was not created");
+        Node summary = registry.findNode(state, summaryContent.getID());
+        if (summary == null) throw new BridgeException(422, "POSTCONDITION_FAILED", "Native summary content proxy is unavailable");
+        summary.setText(text);
+        require(text.equals(summary.getText())
+                        && SummaryNode.isSummaryNode(summaryGroup)
+                        && AlwaysUnfoldedNode.isAlwaysUnfolded(summaryGroup),
+                "native summary readback diverged");
+        return summary;
+    }
+
+    private static NodeModel modelOf(Node node) {
+        if (!(node instanceof AbstractProxy<?> proxy) || !(proxy.getDelegate() instanceof NodeModel model)) {
+            throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Qualified node internals are unavailable");
+        }
+        return model;
+    }
+
+    private static boolean styleEqual(Node node, JsonNode style) {
+        var value = node.getStyle();
+        return (!style.has("background_color") || style.path("background_color").textValue().equalsIgnoreCase(value.getBackgroundColorCode()))
+                && (!style.has("text_color") || style.path("text_color").textValue().equalsIgnoreCase(value.getTextColorCode()))
+                && (!style.has("bold") || style.path("bold").booleanValue() == value.getFont().isBold())
+                && (!style.has("italic") || style.path("italic").booleanValue() == value.getFont().isItalic())
+                && (!style.has("font_size") || style.path("font_size").intValue() == value.getFont().getSize())
+                && (!style.has("node_shape") || style.path("node_shape").textValue().equals(node.getGeometry().getShape().name()));
+    }
+
+    private static boolean layoutEqual(Node node, JsonNode layout) {
+        return (!layout.has("child_nodes") || layout.path("child_nodes").textValue().equals(node.getChildNodesLayout().name()))
+                && (!layout.has("horizontal_shift") || layout.path("horizontal_shift").intValue() == node.getHorizontalShift())
+                && (!layout.has("vertical_shift") || layout.path("vertical_shift").intValue() == node.getVerticalShift())
+                && (!layout.has("minimal_distance_between_children")
+                    || layout.path("minimal_distance_between_children").intValue() == node.getMinimalDistanceBetweenChildren())
+                && (!layout.has("base_distance_to_children")
+                    || layout.path("base_distance_to_children").intValue() == node.getBaseDistanceToChildrenAsLength().toBaseUnitsRounded());
+    }
+
     private void validateOperations(MapRegistry.State state, ArrayNode operations) {
         ValidationTree tree = new ValidationTree(state);
         Set<String> mutatedConnectors = new HashSet<>();
+        Set<String> temporaryIds = new HashSet<>();
         for (int index = 0; index < operations.size(); index++) {
             JsonNode operation = operations.get(index);
             if (!operation.isObject()) {
@@ -726,7 +983,7 @@ final class TransactionEngine {
                     String parent = BridgeSupport.requiredText(operation, "parent");
                     tree.require(parent);
                     String temp = BridgeSupport.requiredText(operation, "temp_id");
-                    if (!temp.matches("\\$[A-Za-z][A-Za-z0-9_-]{0,63}") || tree.contains(temp)) {
+                    if (!validTemporaryId(temp) || !temporaryIds.add(temp) || tree.contains(temp)) {
                         throw new BridgeException(400, "VALIDATION_ERROR", "temp_id must be a unique $-prefixed identifier");
                     }
                     text(operation, "text", true);
@@ -818,6 +1075,116 @@ final class TransactionEngine {
                         throw new BridgeException(400, "VALIDATION_ERROR", "connector can be changed only once per transaction");
                     }
                 }
+                case "clone_node" -> {
+                    String source = BridgeSupport.requiredText(operation, "source");
+                    String parent = BridgeSupport.requiredText(operation, "parent");
+                    tree.require(source);
+                    tree.require(parent);
+                    if (source.equals(parent) || tree.isRoot(source)) {
+                        throw new BridgeException(400, "VALIDATION_ERROR", "clone source must be a non-root node distinct from its parent");
+                    }
+                    if (!operation.path("with_subtree").isBoolean() || operation.path("with_subtree").booleanValue()) {
+                        throw new BridgeException(400, "VALIDATION_ERROR", "only content clones without subtrees are qualified");
+                    }
+                    String temp = BridgeSupport.requiredText(operation, "temp_id");
+                    if (!validTemporaryId(temp) || !temporaryIds.add(temp) || tree.contains(temp)) {
+                        throw new BridgeException(400, "VALIDATION_ERROR", "temp_id must be a unique $-prefixed identifier");
+                    }
+                    tree.create(temp, parent, requiredPosition(operation, "position"));
+                }
+                case "create_summary" -> {
+                    String parent = BridgeSupport.requiredText(operation, "parent");
+                    String first = BridgeSupport.requiredText(operation, "first_child");
+                    String last = BridgeSupport.requiredText(operation, "last_child");
+                    String temp = BridgeSupport.requiredText(operation, "temp_id");
+                    if (!validTemporaryId(temp) || !temporaryIds.add(temp) || tree.contains(temp)) {
+                        throw new BridgeException(400, "VALIDATION_ERROR", "temp_id must be a unique $-prefixed identifier");
+                    }
+                    if (first.startsWith("$") || last.startsWith("$")) {
+                        throw new BridgeException(400, "VALIDATION_ERROR", "summary boundaries must be existing native siblings");
+                    }
+                    tree.requireSummaryRange(parent, first, last);
+                    Node parentNode = registry.findNode(state, parent);
+                    Node firstNode = registry.findNode(state, first);
+                    Node lastNode = registry.findNode(state, last);
+                    if (parentNode == null || firstNode == null || lastNode == null
+                            || firstNode.getParent() == null || lastNode.getParent() == null
+                            || !parentNode.getId().equals(firstNode.getParent().getId())
+                            || !parentNode.getId().equals(lastNode.getParent().getId())) {
+                        throw new BridgeException(400, "VALIDATION_ERROR", "summary boundaries must be current direct siblings");
+                    }
+                    int firstIndex = parentNode.getChildPosition(firstNode);
+                    int lastIndex = parentNode.getChildPosition(lastNode);
+                    if (!new SummaryLevels(modelOf(state.map.getRoot()), modelOf(parentNode))
+                            .canInsertSummaryNode(firstIndex, lastIndex, firstNode.isTopOrLeft())) {
+                        throw new BridgeException(400, "VALIDATION_ERROR", "summary range is invalid in the native layout");
+                    }
+                    tree.createSummary(temp, parent, first, last, !SummaryNode.isSummaryNode(modelOf(firstNode)), index);
+                    text(operation, "text", true);
+                }
+                case "set_free" -> {
+                    tree.require(BridgeSupport.requiredText(operation, "node"));
+                    requireBoolean(operation, "value");
+                }
+                case "set_side" -> {
+                    String node = BridgeSupport.requiredText(operation, "node");
+                    tree.require(node);
+                    if (!tree.isRootChild(node)) {
+                        throw new BridgeException(400, "VALIDATION_ERROR", "set_side is qualified only for direct root children");
+                    }
+                    requireEnum(operation, "side", Set.of("LEFT", "RIGHT"));
+                }
+                case "set_style" -> {
+                    tree.require(BridgeSupport.requiredText(operation, "node"));
+                    validateStyle(operation.path("style"));
+                }
+                case "set_layout" -> {
+                    tree.require(BridgeSupport.requiredText(operation, "node"));
+                    validateLayout(operation.path("layout"));
+                }
+                case "set_cloud" -> {
+                    tree.require(BridgeSupport.requiredText(operation, "node"));
+                    requireBoolean(operation, "enabled");
+                    if (operation.has("shape")) requireEnum(operation, "shape", Set.of("ARC", "STAR", "RECT", "ROUND_RECT"));
+                    if (operation.has("color")) requireColor(operation, "color");
+                }
+                case "set_bookmark" -> {
+                    tree.require(BridgeSupport.requiredText(operation, "node"));
+                    String action = requireEnum(operation, "action", Set.of("set", "remove"));
+                    if (action.equals("set")) {
+                        String name = text(operation, "name", false);
+                        if (name.length() > 256) throw new BridgeException(413, "LIMIT_EXCEEDED", "bookmark name exceeds 256 characters");
+                        requireEnum(operation, "bookmark_type", Set.of("SELECT", "ROOT"));
+                    }
+                }
+                case "set_formula" -> {
+                    tree.require(BridgeSupport.requiredText(operation, "node"));
+                    String expression = text(operation, "expression", false);
+                    if (!validArithmeticFormula(expression)) {
+                        throw new BridgeException(400, "VALIDATION_ERROR", "only bounded numeric arithmetic formulas are qualified");
+                    }
+                }
+                case "set_reminder" -> {
+                    tree.require(BridgeSupport.requiredText(operation, "node"));
+                    String action = requireEnum(operation, "action", Set.of("set", "remove"));
+                    if (operation.has("script")) {
+                        throw new BridgeException(403, "POLICY_DENIED", "reminder scripts are not qualified");
+                    }
+                    if (action.equals("set")) {
+                        try {
+                            Instant at = Instant.parse(BridgeSupport.requiredText(operation, "at"));
+                            if (!java.util.Date.from(at).toInstant().equals(at)) {
+                                throw new BridgeException(400, "VALIDATION_ERROR", "reminder at must have millisecond precision");
+                            }
+                        }
+                        catch (RuntimeException invalid) { throw new BridgeException(400, "VALIDATION_ERROR", "reminder at must be an ISO instant"); }
+                        requireEnum(operation, "period_unit", Set.of("MINUTE", "HOUR", "DAY", "WEEK", "MONTH", "YEAR"));
+                        int period = requiredPosition(operation, "period");
+                        if (period < 1 || period > 10_000) {
+                            throw new BridgeException(400, "VALIDATION_ERROR", "reminder period must be between 1 and 10000");
+                        }
+                    }
+                }
                 case "delete_node" -> {
                     String node = BridgeSupport.requiredText(operation, "node");
                     tree.delete(node);
@@ -834,6 +1201,120 @@ final class TransactionEngine {
             throw new BridgeException(400, "VALIDATION_ERROR", field + " must be null or a non-negative integer");
         }
         return value.longValue();
+    }
+
+    private static boolean validTemporaryId(String value) {
+        return value.matches("\\$[A-Za-z][A-Za-z0-9_-]{0,63}");
+    }
+
+    static boolean validArithmeticFormula(String expression) {
+        if (expression == null || expression.length() < 2 || expression.length() > 256
+                || !expression.matches("^=[0-9+\\-*/().%\\s]+$")) return false;
+        String value = expression.substring(1).replaceAll("\\s+", "");
+        int depth = 0;
+        boolean expectValue = true;
+        for (int index = 0; index < value.length();) {
+            char character = value.charAt(index);
+            if (expectValue) {
+                if (character == '(') {
+                    depth++;
+                    index++;
+                    continue;
+                }
+                int digits = 0;
+                int dots = 0;
+                while (index < value.length()) {
+                    character = value.charAt(index);
+                    if (Character.isDigit(character)) digits++;
+                    else if (character == '.') dots++;
+                    else break;
+                    if (dots > 1) return false;
+                    index++;
+                }
+                if (digits == 0) return false;
+                expectValue = false;
+            } else if (character == ')') {
+                if (depth-- == 0) return false;
+                index++;
+            } else if ("+-*/%".indexOf(character) >= 0) {
+                expectValue = true;
+                index++;
+            } else {
+                return false;
+            }
+        }
+        return !expectValue && depth == 0;
+    }
+
+    private static boolean requireBoolean(JsonNode object, String field) {
+        JsonNode value = object.get(field);
+        if (value == null || !value.isBoolean()) {
+            throw new BridgeException(400, "VALIDATION_ERROR", field + " must be boolean");
+        }
+        return value.booleanValue();
+    }
+
+    private static String requireEnum(JsonNode object, String field, Set<String> allowed) {
+        String value = BridgeSupport.requiredText(object, field);
+        if (!allowed.contains(value)) {
+            throw new BridgeException(400, "VALIDATION_ERROR", field + " is not qualified: " + value);
+        }
+        return value;
+    }
+
+    private static void requireColor(JsonNode object, String field) {
+        JsonNode value = object.get(field);
+        if (value == null || !value.isTextual() || !value.textValue().matches("#[0-9A-Fa-f]{6}")) {
+            throw new BridgeException(400, "VALIDATION_ERROR", field + " must be #RRGGBB");
+        }
+    }
+
+    private static int requireInteger(JsonNode object, String field, int minimum, int maximum) {
+        JsonNode value = object.get(field);
+        if (value == null || !value.isIntegralNumber() || !value.canConvertToInt()
+                || value.intValue() < minimum || value.intValue() > maximum) {
+            throw new BridgeException(400, "VALIDATION_ERROR", field + " must be between " + minimum + " and " + maximum);
+        }
+        return value.intValue();
+    }
+
+    private static void validateStyle(JsonNode style) {
+        Set<String> allowed = Set.of("background_color", "text_color", "bold", "italic", "font_size", "node_shape");
+        requireNonEmptyObject(style, "style", allowed);
+        if (style.has("background_color")) requireColor(style, "background_color");
+        if (style.has("text_color")) requireColor(style, "text_color");
+        if (style.has("bold")) requireBoolean(style, "bold");
+        if (style.has("italic")) requireBoolean(style, "italic");
+        if (style.has("font_size")) requireInteger(style, "font_size", 6, 144);
+        if (style.has("node_shape")) requireEnum(style, "node_shape", Set.of(
+                "FORK", "BUBBLE", "OVAL", "RECTANGLE", "WIDE_HEXAGON", "NARROW_HEXAGON"));
+    }
+
+    private static void validateLayout(JsonNode layout) {
+        Set<String> allowed = Set.of(
+                "child_nodes", "horizontal_shift", "vertical_shift",
+                "minimal_distance_between_children", "base_distance_to_children");
+        requireNonEmptyObject(layout, "layout", allowed);
+        if (layout.has("child_nodes")) requireEnum(layout, "child_nodes", Set.of(
+                "TOPTOBOTTOM_BOTHSIDES_CENTERED", "TOPTOBOTTOM_RIGHT_CENTERED",
+                "LEFTTORIGHT_BOTHSIDES_CENTERED", "LEFTTORIGHT_BOTTOM_CENTERED", "AUTO"));
+        if (layout.has("horizontal_shift")) requireInteger(layout, "horizontal_shift", -10_000, 10_000);
+        if (layout.has("vertical_shift")) requireInteger(layout, "vertical_shift", -10_000, 10_000);
+        if (layout.has("minimal_distance_between_children")) {
+            requireInteger(layout, "minimal_distance_between_children", 0, 10_000);
+        }
+        if (layout.has("base_distance_to_children")) requireInteger(layout, "base_distance_to_children", 0, 10_000);
+    }
+
+    private static void requireNonEmptyObject(JsonNode value, String field, Set<String> allowed) {
+        if (value == null || !value.isObject() || value.isEmpty()) {
+            throw new BridgeException(400, "VALIDATION_ERROR", field + " must be a non-empty object");
+        }
+        value.fieldNames().forEachRemaining(name -> {
+            if (!allowed.contains(name)) {
+                throw new BridgeException(400, "VALIDATION_ERROR", "Unsupported " + field + " property: " + name);
+            }
+        });
     }
 
     private static int requiredPosition(JsonNode object, String field) {
@@ -1015,7 +1496,7 @@ final class TransactionEngine {
 
     private static List<String> affectedIds(JsonNode operation, Map<String, Node> temporary) {
         List<String> ids = new ArrayList<>();
-        for (String field : List.of("node", "parent", "source", "target", "temp_id")) {
+        for (String field : List.of("node", "parent", "source", "target", "first_child", "last_child", "temp_id")) {
             JsonNode value = operation.get(field);
             if (value == null || !value.isTextual()) continue;
             String reference = value.textValue();
@@ -1166,6 +1647,16 @@ final class TransactionEngine {
             return children.get(reference);
         }
 
+        boolean isRootChild(String reference) {
+            require(reference);
+            return rootId.equals(parents.get(reference));
+        }
+
+        boolean isRoot(String reference) {
+            require(reference);
+            return rootId.equals(reference);
+        }
+
         void create(String node, String parent, int position) {
             List<String> siblings = children(parent);
             if (position > siblings.size()) {
@@ -1174,6 +1665,34 @@ final class TransactionEngine {
             parents.put(node, parent);
             children.put(node, new ArrayList<>());
             siblings.add(position, node);
+        }
+
+        void requireSummaryRange(String parent, String first, String last) {
+            List<String> siblings = children(parent);
+            int firstIndex = siblings.indexOf(first);
+            int lastIndex = siblings.indexOf(last);
+            if (firstIndex < 0 || lastIndex < firstIndex) {
+                throw new BridgeException(400, "VALIDATION_ERROR", "summary boundaries must be ordered direct children");
+            }
+        }
+
+        void createSummary(String node, String parent, String first, String last, boolean addFirstGroup, int operationIndex) {
+            List<String> siblings = children(parent);
+            int firstIndex = siblings.indexOf(first);
+            int lastIndex = siblings.indexOf(last);
+            String group = "#summary_group_" + operationIndex;
+            if (addFirstGroup) {
+                String marker = "#first_group_" + operationIndex;
+                parents.put(marker, parent);
+                children.put(marker, new ArrayList<>());
+                siblings.add(firstIndex, marker);
+                lastIndex++;
+            }
+            parents.put(group, parent);
+            children.put(group, new ArrayList<>(List.of(node)));
+            parents.put(node, group);
+            children.put(node, new ArrayList<>());
+            siblings.add(lastIndex + 1, group);
         }
 
         void move(String node, String parent, int position) {
