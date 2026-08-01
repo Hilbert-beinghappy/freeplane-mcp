@@ -1,5 +1,6 @@
 package org.freeplanemcp.bridge;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.freeplane.api.Connector;
@@ -18,11 +19,15 @@ import org.freeplane.plugin.script.proxy.AbstractProxy;
 import javax.swing.SwingUtilities;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -162,7 +167,7 @@ final class MapRegistry implements AutoCloseable {
                     state,
                     "node.updated",
                     List.of(event.getChangedElement().name().toLowerCase(Locale.ROOT)),
-                    List.of(event.getNode().getId()));
+                    nodeIds(event.getNode().getId()));
         };
         state.internalListener = new IMapChangeListener() {
             @Override
@@ -174,19 +179,19 @@ final class MapRegistry implements AutoCloseable {
             @Override
             public void onNodeDeleted(NodeDeletionEvent event) {
                 if (listenersSuppressed()) return;
-                reconcile(state, "node.deleted", List.of("children"), List.of(event.node.getID()));
+                reconcile(state, "node.deleted", List.of("children"), nodeIds(event.node.getID()));
             }
 
             @Override
             public void onNodeInserted(NodeModel parent, NodeModel child, int newIndex) {
                 if (listenersSuppressed()) return;
-                reconcile(state, "node.created", List.of("children"), List.of(parent.getID(), child.getID()));
+                reconcile(state, "node.created", List.of("children"), nodeIds(parent.getID(), child.getID()));
             }
 
             @Override
             public void onNodeMoved(NodeMoveEvent event) {
                 if (listenersSuppressed()) return;
-                reconcile(state, "node.moved", List.of("parent", "position"), List.of(event.child.getID()));
+                reconcile(state, "node.moved", List.of("parent", "position"), nodeIds(event.child.getID()));
             }
         };
         map.addListener(state.publicListener);
@@ -197,6 +202,10 @@ final class MapRegistry implements AutoCloseable {
         state.fileStamp = fileStamp(map.getFile());
         state.wasSaved = map.isSaved();
         return state;
+    }
+
+    private static List<String> nodeIds(String... values) {
+        return java.util.Arrays.stream(values).filter(java.util.Objects::nonNull).toList();
     }
 
     private static MapModel modelOf(MindMap map) {
@@ -415,7 +424,7 @@ final class MapRegistry implements AutoCloseable {
                 "name", state.map.getName(),
                 "background_color", state.map.getBackgroundColorCode(),
                 "root", captureNode(state.map.getRoot(), counter, 0));
-        Snapshot snapshot = new Snapshot(data, BridgeSupport.sha256(BridgeSupport.jsonBytes(data)), counter.value);
+        Snapshot snapshot = new Snapshot(data, logicalSnapshotHash(data), counter.value);
         lastSnapshotMillis = (System.nanoTime() - startedNanos) / 1_000_000.0;
         maxSnapshotMillis = Math.max(maxSnapshotMillis, lastSnapshotMillis);
         return snapshot;
@@ -445,6 +454,7 @@ final class MapRegistry implements AutoCloseable {
                 : new ArrayList<>(outgoingConnectors.size());
         for (Connector connector : outgoingConnectors) {
             connectors.add(map(
+                    "connector_id", BridgeSupport.connectorId(node, connector),
                     "target_id", connector.getTarget().getId(),
                     "shape", connector.getShape(),
                     "color", connector.getColorCode(),
@@ -511,11 +521,53 @@ final class MapRegistry implements AutoCloseable {
         return value == null ? null : String.valueOf(value);
     }
 
+    private static String logicalSnapshotHash(Map<String, Object> data) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            try (JsonGenerator json = BridgeSupport.JSON.getFactory().createGenerator(
+                    new DigestOutputStream(OutputStream.nullOutputStream(), digest))) {
+                writeLogicalSnapshot(json, data, false);
+            }
+            return java.util.HexFormat.of().formatHex(digest.digest());
+        } catch (IOException | NoSuchAlgorithmException failure) {
+            throw new IllegalStateException("Could not hash the canonical map snapshot", failure);
+        }
+    }
+
+    private static void writeLogicalSnapshot(JsonGenerator json, Object value, boolean timestamps) throws IOException {
+        if (value == null) {
+            json.writeNull();
+        } else if (value instanceof Map<?, ?> object) {
+            json.writeStartObject();
+            for (Map.Entry<?, ?> entry : object.entrySet()) {
+                String key = String.valueOf(entry.getKey());
+                // Freeplane rewrites this volatile metadata during redo; reads still expose its current value.
+                if (timestamps && key.equals("modified")) continue;
+                json.writeFieldName(key);
+                writeLogicalSnapshot(json, entry.getValue(), key.equals("timestamps"));
+            }
+            json.writeEndObject();
+        } else if (value instanceof Collection<?> array) {
+            json.writeStartArray();
+            for (Object item : array) writeLogicalSnapshot(json, item, false);
+            json.writeEndArray();
+        } else if (value instanceof String text) {
+            json.writeString(text);
+        } else if (value instanceof Boolean bool) {
+            json.writeBoolean(bool);
+        } else if (value instanceof Number number) {
+            json.writeNumber(number.toString());
+        } else {
+            throw new IllegalStateException("Unsupported canonical snapshot value: " + value.getClass().getName());
+        }
+    }
+
     Snapshot reconcile(State state, String kind, List<String> fields, List<String> nodeIds) {
         assertMainThread();
         Snapshot actual = capture(state);
-        if (!actual.hash.equals(state.snapshot.hash)) {
-            state.snapshot = actual;
+        boolean changed = !actual.hash.equals(state.snapshot.hash);
+        state.snapshot = actual;
+        if (changed) {
             state.contentRevision++;
             appendEvent(state, kind, sourceFor(state), nodeIds, fields, transactionId);
             detectUiEdit(state);

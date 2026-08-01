@@ -274,6 +274,158 @@ export const ChangesInputSchema = z
   })
   .strict();
 
+const NodeReferenceSchema = z.string().min(1).max(512);
+const ContentTextSchema = z.string().max(100_000);
+const TemporaryNodeIdSchema = z.string().regex(/^\$[A-Za-z][A-Za-z0-9_-]{0,63}$/);
+
+const NodeContentSchema = z
+  .object({
+    text: ContentTextSchema.optional(),
+    details: ContentTextSchema.optional(),
+    note: ContentTextSchema.optional(),
+  })
+  .strict();
+
+const ConnectorPropertiesSchema = z
+  .object({
+    shape: z.enum(["LINE", "LINEAR_PATH", "CUBIC_CURVE", "EDGE_LIKE"]).optional(),
+    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+    width: z.int().min(1).max(32).optional(),
+    start_arrow: z.boolean().optional(),
+    end_arrow: z.boolean().optional(),
+    source_label: z.string().max(1_000).optional(),
+    middle_label: z.string().max(1_000).optional(),
+    target_label: z.string().max(1_000).optional(),
+  })
+  .strict();
+
+export const ApplyOperationSchema = z.discriminatedUnion("op", [
+  z.object({
+    op: z.literal("create_node"),
+    temp_id: TemporaryNodeIdSchema,
+    parent_id: NodeReferenceSchema,
+    index: z.int().nonnegative(),
+    content: NodeContentSchema.default({}),
+  }).strict(),
+  z.object({
+    op: z.literal("update_content"),
+    node_id: NodeReferenceSchema,
+    text: ContentTextSchema.optional(),
+    details: ContentTextSchema.optional(),
+    note: ContentTextSchema.optional(),
+  }).strict().refine(
+    (value) => value.text !== undefined || value.details !== undefined || value.note !== undefined,
+    { message: "update_content requires text, details, or note" },
+  ),
+  z.object({
+    op: z.literal("set_attributes"),
+    node_id: NodeReferenceSchema,
+    attributes: z.array(z.object({
+      name: z.string().min(1).max(1_000),
+      value: ContentTextSchema,
+    }).strict()).max(1_000),
+  }).strict(),
+  z.object({
+    op: z.literal("set_tags"),
+    node_id: NodeReferenceSchema,
+    tags: z.array(z.string().min(1).max(1_000)).max(100),
+  }).strict(),
+  z.object({
+    op: z.literal("set_icons"),
+    node_id: NodeReferenceSchema,
+    icons: z.array(z.string().min(1).max(256)).max(100),
+  }).strict(),
+  z.object({
+    op: z.literal("set_link"),
+    node_id: NodeReferenceSchema,
+    link: z.discriminatedUnion("kind", [
+      z.object({ kind: z.literal("none") }).strict(),
+      z.object({ kind: z.literal("uri"), uri: z.url().max(8_192) }).strict(),
+      z.object({ kind: z.literal("node"), target_node_id: NodeReferenceSchema }).strict(),
+      z.object({ kind: z.literal("text"), value: z.string().min(1).max(8_192) }).strict(),
+    ]),
+  }).strict(),
+  z.object({
+    op: z.literal("move_node"),
+    node_id: NodeReferenceSchema,
+    parent_id: NodeReferenceSchema,
+    index: z.int().nonnegative(),
+  }).strict(),
+  z.object({
+    op: z.literal("reorder_children"),
+    parent_id: NodeReferenceSchema,
+    child_ids: z.array(NodeReferenceSchema).max(10_000),
+  }).strict().refine((value) => new Set(value.child_ids).size === value.child_ids.length, {
+    message: "child_ids cannot contain duplicates",
+  }),
+  z.object({
+    op: z.literal("delete_nodes"),
+    node_ids: z.array(NodeReferenceSchema).min(1).max(500),
+  }).strict().refine((value) => new Set(value.node_ids).size === value.node_ids.length, {
+    message: "node_ids cannot contain duplicates",
+  }),
+  z.object({
+    op: z.literal("set_folded"),
+    node_id: NodeReferenceSchema,
+    folded: z.boolean(),
+  }).strict(),
+  z.object({
+    op: z.literal("add_connector"),
+    source_id: NodeReferenceSchema,
+    target_id: NodeReferenceSchema,
+    properties: ConnectorPropertiesSchema.default({}),
+  }).strict(),
+  z.object({
+    op: z.literal("update_connector"),
+    connector_id: z.string().regex(/^fpconn:[a-f0-9]{64}$/),
+    properties: ConnectorPropertiesSchema.refine(
+      (value) => Object.keys(value).length > 0,
+      { message: "update_connector requires at least one property" },
+    ),
+  }).strict(),
+  z.object({
+    op: z.literal("remove_connector"),
+    connector_ids: z.array(z.string().regex(/^fpconn:[a-f0-9]{64}$/)).min(1).max(500),
+  }).strict().refine((value) => new Set(value.connector_ids).size === value.connector_ids.length, {
+    message: "connector_ids cannot contain duplicates",
+  }),
+]);
+
+export const ConfirmationSchema = z
+  .object({
+    confirmation_id: z.string().min(1).max(256),
+    accepted: z.literal(true),
+  })
+  .strict();
+
+export const ApplyInputSchema = z
+  .object({
+    map_id: z.string().min(1).max(512),
+    expected_content_revision: z.int().nonnegative(),
+    expected_view_revision: z.int().nonnegative().nullable().default(null),
+    idempotency_key: z.uuid(),
+    dry_run: z.boolean().default(true),
+    operations: z.array(ApplyOperationSchema).min(1).max(500),
+    confirmation: ConfirmationSchema.nullable().default(null),
+    user_summary: z.string().min(1).max(1_000),
+  })
+  .strict();
+
+export type ApplyOperation = z.infer<typeof ApplyOperationSchema>;
+export type ApplyInput = z.infer<typeof ApplyInputSchema>;
+
+export const HistoryInputSchema = z
+  .object({
+    map_id: z.string().min(1).max(512),
+    action: z.enum(["undo", "redo"]),
+    steps: z.literal(1).default(1),
+    expected_content_revision: z.int().nonnegative(),
+    idempotency_key: z.uuid(),
+  })
+  .strict();
+
+export type HistoryInput = z.infer<typeof HistoryInputSchema>;
+
 export const TOOL_NAMES = [
   "freeplane_status",
   "freeplane_capabilities",

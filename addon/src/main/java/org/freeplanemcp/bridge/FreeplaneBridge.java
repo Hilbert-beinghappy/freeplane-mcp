@@ -34,7 +34,7 @@ import static org.freeplanemcp.bridge.BridgeSupport.BridgeException;
 import static org.freeplanemcp.bridge.BridgeSupport.map;
 
 public final class FreeplaneBridge implements AutoCloseable {
-    private static final String ADDON_VERSION = "0.1.0";
+    private static final String ADDON_VERSION = "0.2.0";
     private static final String QUALIFIED_BUILD_FINGERPRINT = "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822";
     private static final int REQUESTS_PER_SECOND = 240;
     private static FreeplaneBridge instance;
@@ -261,6 +261,9 @@ public final class FreeplaneBridge implements AutoCloseable {
         }
         if (method.equals("POST") && path.equals("/v1/transactions/commit")) {
             return await(onMain(() -> transactions.commit(body)));
+        }
+        if (method.equals("POST") && path.equals("/v1/history")) {
+            return await(onMain(() -> transactions.history(body)));
         }
         if (method.equals("POST") && path.equals("/v1/qualification/history")) {
             return onMain(() -> transactions.qualificationHistory(body));

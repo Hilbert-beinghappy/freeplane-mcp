@@ -12,8 +12,10 @@ import { runCodexHostProbe } from "./codexProbe.js";
 import { BridgeClientError, readBoundedResponseText } from "./bridgeClient.js";
 
 const EXPECTED_TOOLS = [
+  "freeplane_apply",
   "freeplane_capabilities",
   "freeplane_changes",
+  "freeplane_history",
   "freeplane_list_maps",
   "freeplane_read",
   "freeplane_search",
@@ -28,7 +30,7 @@ test("bridge response streaming stops at the configured byte ceiling", async () 
   );
 });
 
-test("stdio handshake is pinned, clean, and exposes only qualified v0.1 read tools", async () => {
+test("stdio handshake is pinned, clean, and exposes only qualified v0.2 tools", async () => {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.resolve("packages/server/dist/index.js")],
@@ -66,7 +68,7 @@ test("stdio handshake is pinned, clean, and exposes only qualified v0.1 read too
       qualification_passed?: boolean;
     };
     assert.equal(statusData.degraded, true);
-    assert.match(statusData.qualification_report ?? "", /^v0\.1-/);
+    assert.match(statusData.qualification_report ?? "", /^v0\.2-/);
     assert.equal(statusData.qualification_passed, true);
 
     const capabilities = ResponseEnvelopeSchema.parse((await client.callTool({
@@ -80,7 +82,7 @@ test("stdio handshake is pinned, clean, and exposes only qualified v0.1 read too
     assert.equal(capabilityData.capabilities.find((item) => item.capability_id === "map.read")?.available_via_mcp, true);
     assert.equal(
       capabilityData.capabilities.find((item) => item.capability_id === "node.update_text")?.available_via_mcp,
-      false,
+      true,
     );
   } finally {
     await client.close();

@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "stage": "v0.2",
+  "generated_at": "2026-08-01T11:14:32.175Z",
+  "passed": true,
+  "qualification_report": "v0.2-ff6dab76e60a",
+  "freeplane": {
+    "version": "1.13.3",
+    "build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822"
+  },
+  "addon_version": "0.2.0",
+  "server_version": "0.2.0",
+  "inherited_qualification_reports": [
+    {
+      "stage": "v0.1",
+      "qualification_report": "v0.1-ff6dab76e60a",
+      "sha256": "2625c50298eaeac477e64f521c4ac893da00f6699fa68e93e1e8d5c077a8d3c4"
+    }
+  ],
+  "checks": [
+    {
+      "id": "build.candidate",
+      "status": "pass",
+      "evidence": "TypeScript build, Java 17 compile, JAR packaging, and BridgeSelfTest passed"
+    },
+    {
+      "id": "preservation.v0.1_gate_inherited",
+      "status": "pass",
+      "evidence": "v0.1 qualified report 2625c50298eaeac477e64f521c4ac893da00f6699fa68e93e1e8d5c077a8d3c4 remains the read-capability evidence base"
+    },
+    {
+      "id": "isolation.bridge_identity",
+      "status": "pass",
+      "evidence": "isolated 0.2.0 bridge uses dynamic loopback binding and private discovery"
+    },
+    {
+      "id": "mcp.eight_tool_surface",
+      "status": "pass",
+      "evidence": "exact six read plus apply/history tools registered"
+    },
+    {
+      "id": "mcp.qualification_identity",
+      "status": "pass",
+      "evidence": "candidate manifest, server, bridge, and protocol identity agree"
+    },
+    {
+      "id": "transaction.new_operation_failure_points",
+      "status": "pass",
+      "evidence": "16/16 new core failure points restored canonical equality"
+    },
+    {
+      "id": "apply.dry_run_zero_effect",
+      "status": "pass",
+      "evidence": "dry-run returned normalized plan/hash and changed no canonical state"
+    },
+    {
+      "id": "apply.core_commit_readback",
+      "status": "pass",
+      "evidence": "all core edits committed atomically with canonical readback and temporary ID resolution"
+    },
+    {
+      "id": "idempotency.same_payload_replay",
+      "status": "pass",
+      "evidence": "same key and payload returned the stored receipt without another write"
+    },
+    {
+      "id": "idempotency.different_payload_rejected",
+      "status": "pass",
+      "evidence": "same key with another payload was rejected"
+    },
+    {
+      "id": "revision.conflict_zero_write",
+      "status": "pass",
+      "evidence": "stale content revision was rejected before mutation"
+    },
+    {
+      "id": "history.one_undo_exact",
+      "status": "pass",
+      "evidence": "one undo restored the exact pre-apply snapshot"
+    },
+    {
+      "id": "history.one_redo_exact",
+      "status": "pass",
+      "evidence": "one redo restored the exact committed snapshot"
+    },
+    {
+      "id": "connector.session_handle",
+      "status": "pass",
+      "evidence": "connector readback returned a fingerprint-scoped handle"
+    },
+    {
+      "id": "connector.update_verified",
+      "status": "pass",
+      "evidence": "connector update committed with canonical readback"
+    },
+    {
+      "id": "connector.update_one_undo_exact",
+      "status": "pass",
+      "evidence": "one undo restored the exact pre-connector-update snapshot"
+    },
+    {
+      "id": "confirmation.bound_challenge",
+      "status": "pass",
+      "evidence": "destructive plan returned a one-time revision- and hash-bound challenge"
+    },
+    {
+      "id": "confirmation.boolean_bypass_rejected",
+      "status": "pass",
+      "evidence": "ordinary boolean confirmation did not reach the write handler"
+    },
+    {
+      "id": "confirmation.delete_verified",
+      "status": "pass",
+      "evidence": "confirmed connector/node deletion committed as one verified unit"
+    },
+    {
+      "id": "confirmation.one_time",
+      "status": "pass",
+      "evidence": "confirmation token could not be used twice"
+    },
+    {
+      "id": "delete.one_undo_exact",
+      "status": "pass",
+      "evidence": "one undo restored deleted node and connector exactly"
+    },
+    {
+      "id": "transaction.cleanup_exact",
+      "status": "pass",
+      "evidence": "qualification map returned to its initial canonical snapshot"
+    },
+    {
+      "id": "history.steps_pinned",
+      "status": "pass",
+      "evidence": "history steps other than one were rejected by schema"
+    },
+    {
+      "id": "performance.100_ops_p95",
+      "status": "pass",
+      "evidence": "100-operation commit p95 199.21 ms across 10 runs"
+    },
+    {
+      "id": "idempotency.private_redacted_state",
+      "status": "pass",
+      "evidence": "atomic idempotency state is 0600 and contains no node text, notes, or full request payloads"
+    },
+    {
+      "id": "isolation.fixture_unchanged",
+      "status": "pass",
+      "evidence": "all qualification edits remained unsaved and source/working fixture bytes were unchanged"
+    },
+    {
+      "id": "mcp.stderr_private",
+      "status": "pass",
+      "evidence": "MCP and Freeplane stderr contain no token or node content"
+    }
+  ],
+  "metrics": {
+    "commit_100_ms": {
+      "p50": 137.27,
+      "p95": 199.21,
+      "max": 199.21,
+      "runs": 10
+    }
+  },
+  "hard_gate": {
+    "exact_tool_surface": true,
+    "dry_run_zero_effect": true,
+    "every_success_readback_verified": true,
+    "one_undo_redo_exact": true,
+    "failure_zero_partial_writes": true,
+    "revision_conflict_zero_write": true,
+    "confirmation_bound": true,
+    "idempotency_verified": true,
+    "performance_p95_under_2s": true
+  }
+}

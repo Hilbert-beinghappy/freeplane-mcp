@@ -8,8 +8,10 @@ import { promisify } from "node:util";
 
 const execFile = promisify(execFileCallback);
 const EXPECTED_TOOLS = [
+  "freeplane_apply",
   "freeplane_capabilities",
   "freeplane_changes",
+  "freeplane_history",
   "freeplane_list_maps",
   "freeplane_read",
   "freeplane_search",

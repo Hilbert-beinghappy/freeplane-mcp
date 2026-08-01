@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import org.freeplane.api.Connector;
+import org.freeplane.api.Node;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -92,6 +95,24 @@ final class BridgeSupport {
 
     static String canonicalHash(JsonNode value) {
         return sha256(jsonBytes(canonicalize(value)));
+    }
+
+    static Map<String, Object> connectorData(Node source, Connector connector) {
+        return map(
+                "source_id", source.getId(),
+                "target_id", connector.getTarget().getId(),
+                "shape", connector.getShape(),
+                "color", connector.getColorCode(),
+                "width", connector.getWidth(),
+                "start_arrow", connector.hasStartArrow(),
+                "end_arrow", connector.hasEndArrow(),
+                "source_label", connector.getSourceLabel(),
+                "middle_label", connector.getMiddleLabel(),
+                "target_label", connector.getTargetLabel());
+    }
+
+    static String connectorId(Node source, Connector connector) {
+        return "fpconn:" + canonicalHash(JSON.valueToTree(connectorData(source, connector)));
     }
 
     static JsonNode canonicalize(JsonNode value) {

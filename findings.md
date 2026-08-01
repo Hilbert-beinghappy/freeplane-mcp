@@ -73,3 +73,13 @@
 - Final binary-matched v0.1 qualification passed 18 checks with add-on/server `0.1.0`: status p95 2.59 ms, 5,000-node read p95 45.06 ms, maximum EDT snapshot slice 82.47 ms, GUI event p95 945.48 ms, reconnect 228.13 ms, and the bounded 50,000-event journal increased Freeplane RSS by 212,992 bytes in the final run. The authoritative report is `qualification/reports/v0.1-local.json`.
 - Capability inspection is derived from the registered v0.1 surface: qualified read capabilities report `available_via_mcp=true`, while v0.0B edit internals remain false until v0.2 registers and requalifies them. Status now reports the v0.1 qualification ID rather than the bootstrap v0.0A probe ID.
 - Saved-file identity is transition-aware: polling preserves the baseline while a map remains saved, detects an external file stamp change, and advances the baseline only on a dirty-to-saved transition.
+
+## v0.2 implementation evidence
+
+- The public MCP surface is exactly eight tools: the six qualified v0.1 reads plus `freeplane_apply` and `freeplane_history`; unqualified v0.3 operations are rejected by the protocol and bridge operation allowlists.
+- `freeplane_apply` supports a strict bounded operation union for create/content/attributes/tags/icons/links/move/reorder/fold/connectors/delete, with revision checks, normalized dry-run plans, postcondition readback, one-time destructive confirmation, and UUID idempotency.
+- The bridge validates the complete virtual tree before mutation, executes one Freeplane compound transaction, resolves temporary node IDs, verifies every operation, and returns no normal partial-success state.
+- The final isolated gate passed all 27 checks: the inherited v0.1 evidence hash, 16/16 injected core failure points, every connector/delete failure point, exact undo/redo, confirmation binding, idempotency replay, private ledger, and unchanged fixture checks all passed.
+- Ten real 100-operation commits measured p50 137.27 ms and p95/max 199.21 ms, below the 2,000 ms gate.
+- Freeplane rewrites `timestamps.modified` during redo and may record a metadata-only history item. Logical snapshot hashes exclude only this volatile field while read responses retain its current value; one MCP history step skips at most eight hash-invariant metadata entries before returning verified logical readback.
+- Idempotency state is atomic `0600` under a `0700` runtime directory, bounded to 10,000 entries/24 hours, stores payload hashes and result envelopes rather than request content, and leaves uncertain outcomes pending for reconciliation.
