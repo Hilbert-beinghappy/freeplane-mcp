@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "stage": "v1.0",
+  "generated_at": "2026-08-01T15:00:53.874Z",
+  "passed": true,
+  "qualification_report": "v1.0-ff6dab76e60a",
+  "freeplane": {
+    "version": "1.13.3",
+    "build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822"
+  },
+  "addon_version": "1.0.0",
+  "server_version": "1.0.0",
+  "helper_version": "1.0.0",
+  "system": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "node_version": "22.17.1",
+    "macos_version": "26.5.2",
+    "macos_build": "25F84"
+  },
+  "inherited_reports": {
+    "v0.1": {
+      "qualification_report": "v0.1-ff6dab76e60a",
+      "sha256": "2625c50298eaeac477e64f521c4ac893da00f6699fa68e93e1e8d5c077a8d3c4"
+    },
+    "v0.2": {
+      "qualification_report": "v0.2-ff6dab76e60a",
+      "sha256": "6bea8f66416f09aadb3212050f3c3879007bef62a6b650e017d77b402fb62f7d"
+    },
+    "v0.3": {
+      "qualification_report": "v0.3-ff6dab76e60a",
+      "sha256": "6430fe244e4e2ddc529345b6ac437f835cc22997ed6475071aaa20bb144c7bd6"
+    },
+    "v0.4": {
+      "qualification_report": "v0.4-ff6dab76e60a",
+      "sha256": "dde1cbc0930a1240ddfb38b94ef08e8dccd3fbf133835f16f4d30d625ebeecda"
+    },
+    "v0.5": {
+      "qualification_report": "v0.5-ff6dab76e60a",
+      "sha256": "ad0a725cbba1bb7d7b40a41797aac342df63951a40ae5e5978468f3ae41b12b2"
+    }
+  },
+  "capability_manifest_sha256": "25be4df5ce798319c87b1ddfe1ca05818dfb71000bb707a734635c6a86f18e1e",
+  "checks": [
+    {
+      "id": "build.complete_test_package",
+      "status": "pass",
+      "evidence": "28 compiled checks, Java self-test, signed Swift self-test, four-package SPDX inventory, and zero high/critical runtime advisories passed"
+    },
+    {
+      "id": "evidence.v0.1_v0.5_inherited",
+      "status": "pass",
+      "evidence": "live reads/performance, atomic writes, research map, file/export safety, and bilingual GUI reports remain hash-bound and passing"
+    },
+    {
+      "id": "capabilities.formal_table_frozen",
+      "status": "pass",
+      "evidence": "formal table froze 44 capabilities: 37 qualified routes and 7 explicit unsupported cuts"
+    },
+    {
+      "id": "install.plan_zero_effect",
+      "status": "pass",
+      "evidence": "install plan resolved explicit paths and produced zero filesystem effect"
+    },
+    {
+      "id": "install.clean_profile_manifest_permissions",
+      "status": "pass",
+      "evidence": "clean dedicated profile installed 947 hash-owned files with owner-only modes"
+    },
+    {
+      "id": "install.idempotent_repeat",
+      "status": "pass",
+      "evidence": "repeated install verified the existing manifest and made no changes"
+    },
+    {
+      "id": "security.prompt_injection_is_data",
+      "status": "pass",
+      "evidence": "malicious map instructions were returned as inert data; no raw script/action/shell tool or marker effect exists"
+    },
+    {
+      "id": "doctor.redacted_preflight",
+      "status": "pass",
+      "evidence": "doctor verified the stopped installation without emitting temporary paths, token, payload, or map content"
+    },
+    {
+      "id": "runtime.first_clean_start_loopback",
+      "status": "pass",
+      "evidence": "clean-profile bridge and twelve-tool server agreed on v1.0 identity with zero public listeners"
+    },
+    {
+      "id": "runtime.restart_and_crash_recovery",
+      "status": "pass",
+      "evidence": "graceful stop and forced crash both degraded honestly; two restarts rotated bridge identity and reconnected"
+    },
+    {
+      "id": "security.least_profile_permissions",
+      "status": "pass",
+      "evidence": "native -R startup leaves profile-wide script bypasses disabled and installs no persistent init script"
+    },
+    {
+      "id": "recovery.indeterminate_write_gate",
+      "status": "pass",
+      "evidence": "pending crash evidence blocked writes, required explicit readback reconciliation, and cleared only after a new MCP process"
+    },
+    {
+      "id": "recovery.file_hash_classification",
+      "status": "pass",
+      "evidence": "installed recovery CLI classified, planned, atomically replaced, and hash-verified retained map evidence"
+    },
+    {
+      "id": "doctor.final_zero_public_private",
+      "status": "pass",
+      "evidence": "final doctor verified exact build/install/capabilities, zero public listen, cleared recovery, and no token disclosure"
+    },
+    {
+      "id": "uninstall.recoverable_preserves_user_state",
+      "status": "pass",
+      "evidence": "uninstall refused a modified file, planned separately, removed only owned code, and preserved profile/runtime recovery data"
+    },
+    {
+      "id": "isolation.user_process_preserved",
+      "status": "pass",
+      "evidence": "preserved 1 pre-existing Freeplane process(es) exactly"
+    }
+  ],
+  "hard_gate": {
+    "clean_user_directory_install": true,
+    "repeated_restart_and_crash_recovery": true,
+    "zero_public_listener": true,
+    "least_permissions": true,
+    "formal_capability_table_frozen": true,
+    "explicit_recovery": true,
+    "recoverable_uninstall": true,
+    "complete_test_package": true,
+    "no_p0_p1_gate_failure": true
+  }
+}

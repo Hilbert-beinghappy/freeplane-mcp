@@ -15,7 +15,7 @@ const AxHelperResponseSchema = z
   .object({
     schema_version: z.literal(1),
     ok: z.boolean(),
-    helper_version: z.literal("0.5.0"),
+    helper_version: z.literal("1.0.0"),
     trusted: z.boolean().optional(),
     bundle_id: z.literal("org.freeplane.launcher").optional(),
     pid: z.int().positive().optional(),

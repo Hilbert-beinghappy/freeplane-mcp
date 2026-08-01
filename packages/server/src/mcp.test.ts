@@ -35,7 +35,7 @@ test("bridge response streaming stops at the configured byte ceiling", async () 
   );
 });
 
-test("stdio handshake is pinned, clean, and exposes only qualified v0.5 tools", async () => {
+test("stdio handshake is pinned, clean, and exposes only qualified v1.0 tools", async () => {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.resolve("packages/server/dist/index.js")],
@@ -73,7 +73,7 @@ test("stdio handshake is pinned, clean, and exposes only qualified v0.5 tools", 
       qualification_passed?: boolean;
     };
     assert.equal(statusData.degraded, true);
-    assert.match(statusData.qualification_report ?? "", /^v0\.5-/);
+    assert.match(statusData.qualification_report ?? "", /^v1\.0-/);
     assert.equal(statusData.qualification_passed, true);
 
     const capabilities = ResponseEnvelopeSchema.parse((await client.callTool({
@@ -116,7 +116,7 @@ test("stdio handshake is pinned, clean, and exposes only qualified v0.5 tools", 
   assert.equal(stderr, "");
 });
 
-test("a v0.5 GUI capability downgrade removes the action tool and the version-pass claim", async () => {
+test("a v1.0 GUI capability downgrade removes the action tool and the version-pass claim", async () => {
   const temporary = await mkdtemp(path.join(tmpdir(), "freeplane-mcp-gate-test-"));
   const result = structuredClone(await loadProbeResult());
   const capability = result.manifest.capabilities.find((item) => item.capability_id === "presentation.navigate");
@@ -130,7 +130,7 @@ test("a v0.5 GUI capability downgrade removes the action tool and the version-pa
   }));
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   const client = new Client(
-    { name: "freeplane-mcp-gate-test", version: "0.5.0" },
+    { name: "freeplane-mcp-gate-test", version: "1.0.0" },
     { supportedProtocolVersions: ["2025-11-25"] },
   );
 

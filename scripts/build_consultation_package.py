@@ -17,11 +17,36 @@ from xml.etree import ElementTree as ET
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-FREEPLANE = Path("/Applications/Freeplane.app/Contents")
+
+
+def discover_freeplane() -> Path:
+    configured = os.environ.get("FREEPLANE_HOME") or os.environ.get("FREEPLANE_APP")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    result = subprocess.run(
+        ["/usr/bin/mdfind", "kMDItemCFBundleIdentifier == 'org.freeplane.launcher'"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    candidate = next((Path(line) for line in result.stdout.splitlines() if line.endswith(".app")), None)
+    if candidate is None:
+        raise RuntimeError("Freeplane.app was not found; set FREEPLANE_HOME")
+    return candidate.resolve()
+
+
+FREEPLANE_APP = discover_freeplane()
+FREEPLANE = FREEPLANE_APP / "Contents"
 APP = FREEPLANE / "app"
-DEFAULT_OUTPUT_ROOT = Path("/Volumes/huawei/项目实战/算法合规/分析结果")
+DEFAULT_OUTPUT_ROOT = Path(os.environ.get(
+    "FREEPLANE_MCP_ANALYSIS_ROOT",
+    PROJECT / "analysis-output",
+)).expanduser().resolve()
 PACKAGE_NAME = "Freeplane_MCP_GPTPro咨询包_20260801"
-REAL_EXAMPLE_ROOT = DEFAULT_OUTPUT_ROOT / "研究全景图"
+REAL_EXAMPLE_ROOT = Path(os.environ.get(
+    "FREEPLANE_MCP_REAL_EXAMPLE_ROOT",
+    DEFAULT_OUTPUT_ROOT / "研究全景图",
+)).expanduser().resolve()
 
 MENU_FILES = [
     "resources/xml/filemodemenu.xml",
@@ -146,7 +171,7 @@ def build_environment() -> dict:
         "architecture": run_text("uname", "-m"),
         "macos_version": run_text("sw_vers", "-productVersion"),
         "freeplane_version": app_info.get("CFBundleShortVersionString"),
-        "freeplane_install": "/Applications/Freeplane.app",
+        "freeplane_install": str(FREEPLANE_APP),
         "freeplane_java": java_line,
         "node": run_text("node", "--version"),
         "npm": run_text("npm", "--version"),

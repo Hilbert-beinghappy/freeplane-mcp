@@ -3,12 +3,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sys
 import zipfile
 from pathlib import Path
 
 
-DEFAULT_ROOT = Path("/Volumes/huawei/项目实战/算法合规/分析结果")
+PROJECT = Path(__file__).resolve().parents[1]
+DEFAULT_ROOT = Path(os.environ.get(
+    "FREEPLANE_MCP_ANALYSIS_ROOT",
+    PROJECT / "analysis-output",
+)).expanduser().resolve()
 NAME = "Freeplane_MCP_GPTPro咨询包_20260801"
 
 

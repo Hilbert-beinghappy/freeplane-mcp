@@ -1,0 +1,111 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "freeplane-mcp-1.0.0",
+  "documentNamespace": "https://github.com/Hilbert-beinghappy/freeplane-mcp/spdx/1.0.0/e1256e6804257e5678eaf631a62cb6a4a23ae0bbde6041b946ec55b6b4ca376a",
+  "creationInfo": {
+    "created": "2026-08-01T15:00:20.965Z",
+    "creators": [
+      "Tool: freeplane-mcp/scripts/generate_sbom.mjs"
+    ]
+  },
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-Freeplane-MCP",
+      "name": "freeplane-mcp",
+      "versionInfo": "1.0.0",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package--modelcontextprotocol-server",
+      "name": "@modelcontextprotocol/server",
+      "versionInfo": "2.0.0",
+      "downloadLocation": "https://registry.npmjs.org/@modelcontextprotocol/server/-/server-2.0.0.tgz",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40modelcontextprotocol/server@2.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "6211d67477e914c41f774a6bb049f129e4b7433df2b481a6b12d2cb61e0a0e39da7084fb87193a8571e427d2b2b31964bd333e59902d41b6dc5217683f81efb7"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package--modelcontextprotocol-core",
+      "name": "@modelcontextprotocol/core",
+      "versionInfo": "2.0.0",
+      "downloadLocation": "https://registry.npmjs.org/@modelcontextprotocol/core/-/core-2.0.0.tgz",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40modelcontextprotocol/core@2.0.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "a49084c061bb2dfafff8f429f594f029735e3b9c336df28bec7dcc6290a8acce28141a10add8e7060128a86f918e1b2f4b514aac36cabb1f8cd478659c65aa70"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-zod",
+      "name": "zod",
+      "versionInfo": "4.4.3",
+      "downloadLocation": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/zod@4.4.3"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "cad10d163209165d94c1882575eda37215b61f09b818914b0e249759d4eb25004837d15cca9ee7e0387124489634024c575fc1a967d6fe4920ef55037072724d"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-Package-Freeplane-MCP",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--modelcontextprotocol-server"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-Freeplane-MCP",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package--modelcontextprotocol-core"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-Freeplane-MCP",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-zod"
+    }
+  ]
+}

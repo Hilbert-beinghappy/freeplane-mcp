@@ -21,7 +21,7 @@ Implement the frozen Freeplane MCP specification sequentially, keeping every unq
 | 9. v0.3 knowledge organization and style | complete | Qualified style/layout/summary/clone/filter/formula/reminder subset passes the 35-node/33-relation reconstruction gate |
 | 10. v0.4 document lifecycle, export, and protection | complete | Qualified lifecycle/export/file-write routes pass conflict, artifact, XXE, and unknown-XML preservation gates; encryption remains cut |
 | 11. v0.5 menu and macOS Accessibility | complete | Allow-listed GUI-only capabilities pass bilingual, focus, dialog-cancel, and postcondition qualification |
-| 12. v1.0 local stable release | in_progress | Installer/uninstaller, diagnostics, recovery, compatibility matrix, docs, and complete qualification package pass clean-profile and restart gates |
+| 12. v1.0 local stable release | complete | Installer/uninstaller, diagnostics, recovery, compatibility matrix, docs, and complete qualification package pass clean-profile and restart gates |
 
 ## Locked decisions
 
@@ -32,7 +32,7 @@ Implement the frozen Freeplane MCP specification sequentially, keeping every unq
 - Reversible edits may auto-run; destructive/overwriting/encryption/unsaved-close operations require confirmation.
 - The repository is public at `Hilbert-beinghappy/freeplane-mcp`; the user authorized a dedicated commit and GitHub push after each remaining version passes its gate.
 - v0.0 consultation is a hard gate before implementation.
-- Repository source is stored at `/Volumes/huawei/项目实战/freeplane-mcp`; runtime dependencies and temporary build/test artifacts stay on local APFS because the repository volume is ExFAT.
+- Repository source is stored on the user-selected ExFAT project volume; runtime dependencies and temporary build/test artifacts stay on local APFS.
 
 ## Errors encountered
 
@@ -65,7 +65,7 @@ Implement the frozen Freeplane MCP specification sequentially, keeping every unq
 
 ## Current gate
 
-v0.0A through v0.5 passed on the frozen Freeplane 1.13.3 build. Current gate: v1.0 local stable release. The v0.5 server exposes exactly twelve tools; destructive modal imports, node/map encryption, final printing, preferences, executable conditional styles, raw CSS, and arbitrary scripts remain unavailable.
+v0.0A through v1.0 passed on the frozen Freeplane 1.13.3 build. The v1.0 local-stable server exposes exactly twelve tools and freezes 44 capability rows: 37 supported and seven explicitly unsupported. Destructive modal imports, node/map encryption, final printing, preferences, executable conditional styles, raw CSS, and arbitrary scripts remain unavailable.
 
 ## v0.4 high-risk execution boundary
 
@@ -86,3 +86,13 @@ v0.0A through v0.5 passed on the frozen Freeplane 1.13.3 build. Current gate: v1
 - Verification: bilingual menu resolution, focus recovery from another application, two-slide navigation state, preview dialog open/close, cancellation with no content mutation, dry-run zero effect, stale revision rejection, arbitrary-input rejection, helper signature, and preservation of all pre-existing Freeplane PIDs.
 - Rollback: GUI actions are limited to reversible presentation/view state and closing the preview window; no file or map-content write is permitted.
 - Explicit cuts: destructive imports, map encryption, final printing, preferences, and other modal workflows remain unsupported until they have secure inputs plus deterministic preconditions, cancellation, and postcondition evidence.
+
+## v1.0 high-risk execution boundary
+
+- Goal: package the already-qualified local capabilities into a repeatable local install with read-only diagnostics, explicit recovery decisions, frozen compatibility evidence, and a complete final qualification report.
+- Scope: source-controlled build outputs, an explicit installation prefix, and an explicit isolated Freeplane user directory; qualification must use temporary paths and preserve every pre-existing Freeplane process.
+- Minimal routes: one Node management entry point performs install or uninstall only with `--apply`; the existing CLI gains read-only `doctor` and explicit file-recovery commands; all installed files are enumerated and hashed in one manifest.
+- Blast radius controls: no public listener, no upload, no telemetry, no arbitrary script execution, no symlink traversal, no automatic recovery choice, no broad profile cleanup, and no write outside the exact prefix/profile paths supplied by the caller.
+- Verification: clean-profile install, repeat install, executable STDIO launcher, exact permissions and hashes, modified-file uninstall refusal, unrelated-file preservation, redacted doctor output, zero public listen, repeated isolated restarts, crash-state classification, explicit recovery readback, and frozen capability-table equality.
+- Rollback: install stages before publishing; uninstall removes only unchanged manifest-owned paths; recovery writes through a same-directory sibling and requires the expected pre-state before replacement.
+- Explicit cuts: no GitHub Release, package-registry publication, notarization, license selection, production deployment, or repository-visibility change is part of the local v1.0 gate.

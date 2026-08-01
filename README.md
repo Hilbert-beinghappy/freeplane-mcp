@@ -1,30 +1,42 @@
 # Freeplane MCP
 
-Local-first MCP integration for Freeplane 1.13.3 on Apple Silicon macOS.
+Local-first MCP integration for the exact qualified Freeplane 1.13.3 build on Apple Silicon macOS.
 
-The Git repository lives at `/Volumes/huawei/项目实战/freeplane-mcp`. Because that volume is ExFAT, Node dependencies and temporary build/test work must use a local APFS cache directory.
+The v1.0 local-stable surface has twelve goal-level tools for live reads, revisioned changes, atomic editing/history, knowledge organization, document lifecycle, verified export, limited closed-file text writeback, and allowlisted presentation/print-preview control. Raw action keys, arbitrary scripts or shell commands, coordinates, public listeners, uploads, automatic Git/GitHub actions, destructive imports, encryption, and final printing are unavailable.
 
-The external review has been reconciled into the final implementation specification. The project has passed the gates through **v0.5 allowlisted presentation and print-preview automation**.
-
-## Current commands
+## Develop and qualify
 
 ```bash
 npm run bootstrap
-npm run qualify:v0.0a
-npm run qualify:v0.0b
-npm run qualify:v0.1
-npm run qualify:v0.2
-npm run qualify:v0.3
-npm run qualify:v0.4
-npm run qualify:v0.5
-npm start
+npm test
+npm run test:addon
+npm run qualify:v1.0
 ```
 
-The v0.5 STDIO server exposes twelve qualified tools. It retains the v0.4 read/edit/organization/document/export surface and adds `freeplane_invoke_action` for six presentation-navigation actions plus print-preview open/close. A minimal ad-hoc-signed Swift helper binds every call to the exact Freeplane bundle, process, window, capability, and localized menu path; Accessibility permission is required only for this GUI route. Raw action keys, menu paths, scripts, shell commands, coordinates, destructive imports, map encryption, final printing, and preferences remain unavailable. See [docs/v0.0a.md](docs/v0.0a.md), [docs/v0.0b.md](docs/v0.0b.md), [docs/v0.1.md](docs/v0.1.md), [docs/v0.3.md](docs/v0.3.md), [docs/v0.4.md](docs/v0.4.md), and [docs/v0.5.md](docs/v0.5.md).
+Set `FREEPLANE_HOME` or `FREEPLANE_APP` when bundle discovery is not appropriate. Node dependencies and build caches must be on an APFS volume; `npm run bootstrap` provisions the repository's configured local cache when the source checkout is on ExFAT.
 
-The earlier consultation package can still be reproduced with:
+Historical gates remain reproducible with `npm run qualify:<version>` for `v0.0a`, `v0.0b`, `v0.1`, `v0.2`, `v0.3`, `v0.4`, and `v0.5`.
+
+## Local install
+
+Review the default plan, then apply it explicitly:
 
 ```bash
-python3 scripts/build_consultation_package.py
-python3 scripts/verify_consultation_package.py
+npm run install:local
+npm run install:local -- --apply
 ```
+
+The installer uses a dedicated Freeplane user directory and never changes profile-wide script permissions. Launch Freeplane through the installed `bin/freeplane-mcp-freeplane`, configure Codex to run `bin/freeplane-mcp` over STDIO, and inspect the installation with `bin/freeplane-mcp-cli doctor`.
+
+Uninstall is also plan-first:
+
+```bash
+bin/freeplane-mcp-cli uninstall
+bin/freeplane-mcp-cli uninstall --apply
+```
+
+See [v1.0 installation and release boundary](docs/v1.0.md), [compatibility](docs/compatibility.md), [recovery](docs/recovery.md), and [security policy](SECURITY.md). Qualification evidence lives under `qualification/reports/`; the frozen runtime table is `qualification/capabilities/capabilities.json`.
+
+## Licensing status
+
+This repository is publicly visible, but no project license has been selected. v1.0 is a qualified local build, not a formal redistributable or notarized release. See [third-party notices and remaining legal gate](THIRD_PARTY_NOTICES.md).

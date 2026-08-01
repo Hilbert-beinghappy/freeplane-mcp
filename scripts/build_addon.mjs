@@ -1,19 +1,24 @@
 import { execFile } from "node:child_process";
-import { mkdir, opendir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, opendir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
+import { findFreeplaneApp } from "./freeplane_app.mjs";
+
 const run = promisify(execFile);
 const root = process.cwd();
-const app = process.env.FREEPLANE_APP ?? "/Applications/Freeplane.app";
+const packageMetadata = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
+const version = packageMetadata.version;
+const release = version.split(".").slice(0, 2).join(".");
+const app = await findFreeplaneApp();
 const runtime = path.join(app, "Contents/runtime/Contents/Home/bin");
 const appRoot = path.join(app, "Contents/app");
 const cache = process.env.FREEPLANE_MCP_BUILD_DIR
-  ?? path.join(homedir(), "Library/Caches/Freeplane-MCP/build/v0.5");
+  ?? path.join(homedir(), `Library/Caches/Freeplane-MCP/build/v${release}`);
 const classes = path.join(cache, "classes");
 const testClasses = path.join(cache, "test-classes");
-const jar = path.join(cache, "freeplane-mcp-bridge-0.5.0.jar");
+const jar = path.join(cache, `freeplane-mcp-bridge-${version}.jar`);
 
 async function filesUnder(directory, suffix) {
   const found = [];
@@ -76,7 +81,7 @@ if (!stdout.includes("BridgeSelfTest: pass")) throw new Error("Bridge self-test 
 
 const metadata = {
   schema_version: 1,
-  addon_version: "0.5.0",
+  addon_version: version,
   freeplane_app: app,
   source_count: mainSources.length,
   jar,

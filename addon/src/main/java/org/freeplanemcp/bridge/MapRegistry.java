@@ -233,6 +233,7 @@ final class MapRegistry implements AutoCloseable {
         assertMainThread();
         refreshMaps();
         State active = activeState();
+        long recoveryRequiredMaps = statesById.values().stream().filter(state -> state.recoveryRequired).count();
         return map(
                 "map_count", statesById.size(),
                 "active_map_id", active == null ? null : active.mapId,
@@ -244,6 +245,8 @@ final class MapRegistry implements AutoCloseable {
                 "ui_detection_latency_ms", uiDetectionLatencyMillis,
                 "last_snapshot_ms", lastSnapshotMillis,
                 "max_snapshot_ms", maxSnapshotMillis,
+                "recovery_required", recoveryRequiredMaps > 0,
+                "recovery_required_map_count", recoveryRequiredMaps,
                 "main_thread", SwingUtilities.isEventDispatchThread());
     }
 

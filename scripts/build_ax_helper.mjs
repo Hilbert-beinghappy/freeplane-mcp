@@ -7,8 +7,10 @@ import { promisify } from "node:util";
 
 const execFile = promisify(execFileCallback);
 const root = process.cwd();
+const version = JSON.parse(await readFile(path.join(root, "package.json"), "utf8")).version;
+const release = version.split(".").slice(0, 2).join(".");
 const buildDir = process.env.FREEPLANE_MCP_AX_BUILD_DIR
-  ?? path.join(homedir(), "Library/Caches/Freeplane-MCP/ax-helper/v0.5");
+  ?? path.join(homedir(), `Library/Caches/Freeplane-MCP/ax-helper/v${release}`);
 const source = path.join(root, "helper/macos-ax/main.swift");
 const binary = path.join(buildDir, "freeplane-mcp-ax-helper");
 
@@ -33,13 +35,13 @@ const selfTest = JSON.parse((await execFile(binary, [JSON.stringify({
   schema_version: 1,
   command: "self_test",
 })])).stdout);
-if (selfTest.ok !== true || selfTest.helper_version !== "0.5.0" || selfTest.allowlisted_action_count !== 8) {
+if (selfTest.ok !== true || selfTest.helper_version !== version || selfTest.allowlisted_action_count !== 8) {
   throw new Error("Accessibility helper self-test failed");
 }
 const bytes = await readFile(binary);
 const metadata = {
   schema_version: 1,
-  helper_version: "0.5.0",
+  helper_version: version,
   identifier: "com.hilbertbeinghappy.freeplane-mcp.ax-helper",
   signature: "adhoc",
   sha256: createHash("sha256").update(bytes).digest("hex"),

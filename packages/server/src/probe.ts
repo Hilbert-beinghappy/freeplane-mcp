@@ -111,7 +111,9 @@ export interface ProbeResult {
 export interface ProbeOptions {
   baselinePath?: string;
   freeplaneApp?: string;
+  freeplaneUserDirectory?: string;
   now?: Date;
+  root?: string;
 }
 
 const KNOWN_PROTOCOL_REVISIONS = [
@@ -131,8 +133,8 @@ async function exists(candidate: string): Promise<boolean> {
   }
 }
 
-async function discoverFreeplaneApp(explicit?: string): Promise<string> {
-  const candidates = [explicit, process.env.FREEPLANE_APP].filter(
+export async function discoverFreeplaneApp(explicit?: string): Promise<string> {
+  const candidates = [explicit, process.env.FREEPLANE_HOME, process.env.FREEPLANE_APP].filter(
     (value): value is string => Boolean(value),
   );
 
@@ -147,11 +149,11 @@ async function discoverFreeplaneApp(explicit?: string): Promise<string> {
     }
   }
 
-  candidates.push("/Applications/Freeplane.app", path.join(homedir(), "Applications/Freeplane.app"));
+  candidates.push(path.join(homedir(), "Applications/Freeplane.app"));
   for (const candidate of candidates) {
     if (await exists(candidate)) return realpath(candidate);
   }
-  throw new Error("Freeplane.app was not found; set FREEPLANE_APP to its absolute path");
+  throw new Error("Freeplane.app was not found; set FREEPLANE_HOME or FREEPLANE_APP to its absolute path");
 }
 
 async function sha256File(file: string): Promise<{ sha256: string; size: number }> {
@@ -270,12 +272,12 @@ async function findCodex(): Promise<QualificationReport["codex"]> {
   };
 }
 
-async function lockedDependencyVersions(): Promise<{
+async function lockedDependencyVersions(root: string): Promise<{
   clientSdk: string | null;
   serverSdk: string | null;
   zod: string[];
 }> {
-  const lockPath = path.resolve("package-lock.json");
+  const lockPath = path.join(root, "package-lock.json");
   if (!(await exists(lockPath))) return { clientSdk: null, serverSdk: null, zod: [] };
   const lock = JSON.parse(await readFile(lockPath, "utf8")) as {
     packages?: Record<string, { version?: string }>;
@@ -299,10 +301,10 @@ function redactHome(value: string): string {
   return value === home || value.startsWith(`${home}${path.sep}`) ? `$HOME${value.slice(home.length)}` : value;
 }
 
-async function readBuiltinMcpSettings(): Promise<{ enabled: boolean; port: number }> {
+async function readBuiltinMcpSettings(freeplaneUserDirectory?: string): Promise<{ enabled: boolean; port: number }> {
   let enabled = false;
   let port = 6298;
-  const root = path.join(homedir(), ".freeplane");
+  const root = freeplaneUserDirectory ?? path.join(homedir(), ".freeplane");
   if (!(await exists(root))) return { enabled, port };
 
   for (const entry of await readdir(root, { withFileTypes: true })) {
@@ -409,10 +411,11 @@ function capabilities(
 }
 
 export async function runProbe(options: ProbeOptions = {}): Promise<ProbeResult> {
+  const root = options.root ?? process.cwd();
   const baselinePath =
     options.baselinePath ??
     process.env.FREEPLANE_MCP_BASELINE ??
-    path.resolve("qualification/baselines/freeplane-1.13.3.json");
+    path.join(root, "qualification/baselines/freeplane-1.13.3.json");
   const baseline = JSON.parse(await readFile(baselinePath, "utf8")) as Baseline;
   if (baseline.schema_version !== 1 || !SHA256.test(baseline.build_fingerprint)) {
     throw new Error(`Invalid qualification baseline: ${baselinePath}`);
@@ -436,8 +439,8 @@ export async function runProbe(options: ProbeOptions = {}): Promise<ProbeResult>
     baseline.class_probes.map((classProbe) => inspectClass(app, javap, classProbe)),
   );
   const codex = await findCodex();
-  const lockedDependencies = await lockedDependencyVersions();
-  const builtinSettings = await readBuiltinMcpSettings();
+  const lockedDependencies = await lockedDependencyVersions(root);
+  const builtinSettings = await readBuiltinMcpSettings(options.freeplaneUserDirectory);
   const reportId = `v0.0a-${fingerprint.slice(0, 12)}`;
   const requiredActions = new Set(menu.required_actions_present);
 

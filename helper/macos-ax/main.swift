@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 import Foundation
 
-private let helperVersion = "0.5.0"
+private let helperVersion = "1.0.0"
 private let freeplaneBundleIdentifier = "org.freeplane.launcher"
 
 private struct ActionSpec {

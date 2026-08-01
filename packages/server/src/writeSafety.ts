@@ -232,14 +232,35 @@ interface LedgerEntry {
   key: string;
   payload_hash: string;
   bridge_instance_id: string;
-  status: "pending" | "complete";
+  status: "pending" | "complete" | "reconciled";
   created_at: string;
   result?: ResponseEnvelope;
+  reconciled_at?: string;
+  readback_sha256?: string;
 }
 
 interface LedgerFile {
   schema_version: 1;
   entries: LedgerEntry[];
+}
+
+function retainedLedgerEntries(entries: LedgerEntry[]): LedgerEntry[] {
+  const pending = entries.filter((entry) => entry.status === "pending");
+  if (pending.length > MAX_ENTRIES) {
+    throw new BridgeClientError("RECOVERY_REQUIRED", "Too many pending idempotency entries", {}, 500);
+  }
+  const recentSettled = entries
+    .filter((entry) => entry.status !== "pending" && Date.parse(entry.created_at) >= Date.now() - MAX_AGE_MS)
+    .slice(-(MAX_ENTRIES - pending.length));
+  return [...recentSettled, ...pending]
+    .sort((left, right) => Date.parse(left.created_at) - Date.parse(right.created_at));
+}
+
+export interface PendingLedgerEntry {
+  key: string;
+  payload_hash: string;
+  bridge_instance_id: string;
+  created_at: string;
 }
 
 export class IdempotencyLedger {
@@ -290,6 +311,14 @@ export class IdempotencyLedger {
         }
         return existing.result;
       }
+      if ([...this.entries.values()].some((entry) => entry.status === "pending")) {
+        throw new BridgeClientError(
+          "IDEMPOTENCY_RECONCILIATION_REQUIRED",
+          "A prior write outcome must be reconciled before another write",
+          {},
+          409,
+        );
+      }
       this.entries.set(key, {
         key,
         payload_hash: payloadHash,
@@ -306,9 +335,55 @@ export class IdempotencyLedger {
     return this.lock(async () => {
       await this.load();
       const entry = this.entries.get(key);
-      if (!entry) throw new BridgeClientError("RECOVERY_REQUIRED", "Idempotency entry disappeared", {}, 500);
+      if (!entry || entry.status !== "pending") {
+        throw new BridgeClientError("RECOVERY_REQUIRED", "Pending idempotency entry disappeared", {}, 500);
+      }
       entry.status = "complete";
       entry.result = result;
+      await this.persist();
+    });
+  }
+
+  summary(): Promise<{ total: number; pending: number; complete: number; reconciled: number }> {
+    return this.lock(async () => {
+      await this.load();
+      const entries = [...this.entries.values()];
+      return {
+        total: entries.length,
+        pending: entries.filter((entry) => entry.status === "pending").length,
+        complete: entries.filter((entry) => entry.status === "complete").length,
+        reconciled: entries.filter((entry) => entry.status === "reconciled").length,
+      };
+    });
+  }
+
+  pendingEntries(): Promise<PendingLedgerEntry[]> {
+    return this.lock(async () => {
+      await this.load();
+      return [...this.entries.values()]
+        .filter((entry) => entry.status === "pending")
+        .map(({ key, payload_hash, bridge_instance_id, created_at }) => ({
+          key,
+          payload_hash,
+          bridge_instance_id,
+          created_at,
+        }));
+    });
+  }
+
+  reconcilePending(key: string, payloadHash: string, readbackSha256: string): Promise<void> {
+    return this.lock(async () => {
+      if (!/^[a-f0-9]{64}$/.test(payloadHash) || !/^[a-f0-9]{64}$/.test(readbackSha256)) {
+        throw new BridgeClientError("VALIDATION_ERROR", "Recovery hashes must be lowercase SHA-256 values", {}, 400);
+      }
+      await this.load();
+      const entry = this.entries.get(key);
+      if (!entry || entry.status !== "pending" || entry.payload_hash !== payloadHash) {
+        throw new BridgeClientError("IDEMPOTENCY_RECONCILIATION_REQUIRED", "Pending idempotency evidence does not match", {}, 409);
+      }
+      entry.status = "reconciled";
+      entry.reconciled_at = new Date().toISOString();
+      entry.readback_sha256 = readbackSha256;
       await this.persist();
     });
   }
@@ -321,8 +396,6 @@ export class IdempotencyLedger {
 
   private async load(): Promise<void> {
     if (this.loaded) return;
-    await mkdir(path.dirname(this.target), { recursive: true, mode: 0o700 });
-    await chmod(path.dirname(this.target), 0o700);
     const metadata = await lstat(this.target).catch(() => null);
     if (!metadata) {
       this.loaded = true;
@@ -340,18 +413,14 @@ export class IdempotencyLedger {
     if (!isLedgerFile(value)) {
       throw new BridgeClientError("RECOVERY_REQUIRED", "Idempotency state schema is invalid", {}, 500);
     }
-    const cutoff = Date.now() - MAX_AGE_MS;
-    this.entries = new Map(value.entries
-      .filter((entry) => Date.parse(entry.created_at) >= cutoff)
-      .slice(-MAX_ENTRIES)
-      .map((entry) => [entry.key, entry]));
+    this.entries = new Map(retainedLedgerEntries(value.entries).map((entry) => [entry.key, entry]));
     this.loaded = true;
   }
 
   private async persist(): Promise<void> {
-    const entries = [...this.entries.values()]
-      .filter((entry) => Date.parse(entry.created_at) >= Date.now() - MAX_AGE_MS)
-      .slice(-MAX_ENTRIES);
+    await mkdir(path.dirname(this.target), { recursive: true, mode: 0o700 });
+    await chmod(path.dirname(this.target), 0o700);
+    const entries = retainedLedgerEntries([...this.entries.values()]);
     this.entries = new Map(entries.map((entry) => [entry.key, entry]));
     const temporary = path.join(path.dirname(this.target), `.write-state-${randomUUID()}.tmp`);
     try {
@@ -368,16 +437,24 @@ function isLedgerFile(value: unknown): value is LedgerFile {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const candidate = value as Record<string, unknown>;
   if (candidate.schema_version !== 1 || !Array.isArray(candidate.entries) || candidate.entries.length > MAX_ENTRIES) return false;
+  const keys = new Set<string>();
   return candidate.entries.every((entry) => {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
     const item = entry as Record<string, unknown>;
-    return typeof item.key === "string"
-      && typeof item.payload_hash === "string"
+    if (typeof item.key !== "string" || keys.has(item.key)) return false;
+    keys.add(item.key);
+    return typeof item.payload_hash === "string"
       && /^[a-f0-9]{64}$/.test(item.payload_hash)
       && typeof item.bridge_instance_id === "string"
-      && (item.status === "pending" || item.status === "complete")
+      && (item.status === "pending" || item.status === "complete" || item.status === "reconciled")
       && typeof item.created_at === "string"
       && Number.isFinite(Date.parse(item.created_at))
-      && (item.status === "pending" || (item.result !== undefined && typeof item.result === "object"));
+      && (item.status === "pending"
+        || (item.status === "complete" && item.result !== undefined && typeof item.result === "object")
+        || (item.status === "reconciled"
+          && typeof item.reconciled_at === "string"
+          && Number.isFinite(Date.parse(item.reconciled_at))
+          && typeof item.readback_sha256 === "string"
+          && /^[a-f0-9]{64}$/.test(item.readback_sha256)));
   });
 }

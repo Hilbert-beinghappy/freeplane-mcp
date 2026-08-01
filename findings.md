@@ -5,7 +5,7 @@
 - Freeplane 1.13.3 is installed at `/Applications/Freeplane.app` on Apple Silicon.
 - Bundled runtime is OpenJDK 21; local Node is 22.17.1 and npm is 10.9.2.
 - Codex supports local STDIO MCP servers configured in user or project `config.toml`.
-- The repository lives at `/Volumes/huawei/项目实战/freeplane-mcp` on ExFAT; Node dependencies and temporary build/test work will use local APFS storage.
+- The repository lives on ExFAT; Node dependencies and temporary build/test work use local APFS storage.
 
 ## Verified Freeplane automation surfaces
 
@@ -101,7 +101,7 @@
 - Native PNG/PDF/SVG/static-HTML exporters are selected by stable implementation identity. Vector output waits for bounded stable completion; every staged artifact is format-checked, hashed, and atomically published, with a durable backup before overwrite.
 - Closed-file writeback accepts only ordinary-node `TEXT` changes on configured files not open in Freeplane. The final gate preserved BOM, comments, namespaces, unknown attributes/elements, xattrs, and every byte outside the selected values while retaining original/candidate/manifest backups.
 - The hostile matrix rejects DTD/XXE, symlinks, and outside-root paths before Freeplane. Node encryption remains `unsupported` because ordinary MCP parameters are not a secure secret-input channel.
-- The final isolated gate passed 26/26 checks and preserved the pre-existing Freeplane PID 43117 exactly.
+- The final isolated gate passed 26/26 checks and preserved the one pre-existing user Freeplane process exactly.
 
 ## v0.5 implementation evidence
 
@@ -109,5 +109,12 @@
 - The minimal ad-hoc-signed Swift helper binds the request to bundle `org.freeplane.launcher`, the bridge-reported PID, an identifiable main window, and exact English or Simplified Chinese AX menu titles. It accepts no raw action key, menu path, AX query, script, shell command, or coordinate.
 - Presentation state is created and read through the in-process bridge. Start, stop, first, previous, next, and last each require revision preconditions and a deterministic bridge postcondition; print preview requires AX window appearance and close-button cancellation readback.
 - macOS global-menu focus changes, hidden background menus, and rendered Chinese mnemonic suffixes were observed directly. The helper now uses system-wide AX focus PID state, selects one path from the authenticated bridge locale, reports background dry-run resolution as deferred, and strips only a terminal one-character mnemonic before actual exact-title comparison.
-- The final bilingual isolated gate passed 30/30 checks. Both locales passed dry-run zero effect, focus recovery, idempotent replay, six presentation transitions, preview open/cancel, stale-revision and arbitrary-input rejection, zero content mutation, private logs, helper signature verification, and exact preservation of Freeplane PID 43117.
+- The final bilingual isolated gate passed 30/30 checks. Both locales passed dry-run zero effect, focus recovery, idempotent replay, six presentation transitions, preview open/cancel, stale-revision and arbitrary-input rejection, zero content mutation, private logs, helper signature verification, and exact preservation of the one pre-existing user Freeplane process.
+
+## v1.0 local-stable evidence
+
+- The final isolated v1.0 gate passed 16/16 checks and all nine hard-gate predicates: clean dedicated-profile install, idempotent repeat install, exact owner-only modes and file hashes, zero public listeners, least profile permissions, graceful and forced-crash restart recovery, explicit ledger/file recovery, manifest-bound uninstall, complete inherited evidence, and exact preservation of the pre-existing user Freeplane process.
+- The frozen manifest contains 44 capability rows: 37 supported and seven explicitly unsupported. Its SHA-256 exactly matches the hash recorded by `qualification/reports/v1.0-local.json`; every promoted row uses qualification report `v1.0-ff6dab76e60a`.
+- The installer packages 947 manifest-owned files in the observed qualification run, installs no persistent Freeplane init script, makes no global script-permission bypass, and removes only unchanged manifest-owned code. Recovery evidence and unrelated profile/runtime files survive uninstall.
+- v1.0 is a qualified local-stable source release boundary, not a GitHub Release or registry publication; signing/notarization and a project license remain explicit future decisions.
 - Destructive imports, node/map encryption, final printing, preferences, and other modal workflows remain explicitly unsupported because no secure input plus deterministic cancellation/postcondition path qualified.

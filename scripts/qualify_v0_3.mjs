@@ -5,12 +5,14 @@ import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
+import { findFreeplaneApp } from "./freeplane_app.mjs";
+
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport, getDefaultEnvironment } from "@modelcontextprotocol/client/stdio";
 
 const execFile = promisify(execFileCallback);
 const root = process.cwd();
-const app = process.env.FREEPLANE_APP ?? "/Applications/Freeplane.app";
+const app = await findFreeplaneApp();
 const binary = path.join(app, "Contents/MacOS/Freeplane");
 const buildDir = process.env.FREEPLANE_MCP_BUILD_DIR
   ?? path.join(homedir(), "Library/Caches/Freeplane-MCP/build/v0.3");

@@ -8,13 +8,13 @@ import { BridgeClientError } from "./bridgeClient.js";
 
 const builtHelper = path.join(
   homedir(),
-  "Library/Caches/Freeplane-MCP/ax-helper/v0.5/freeplane-mcp-ax-helper",
+  "Library/Caches/Freeplane-MCP/ax-helper/v1.0/freeplane-mcp-ax-helper",
 );
 
 test("signed Accessibility helper reports a bounded local status", async () => {
   const status = await probeAxHelper(axHelperConfig({ FREEPLANE_MCP_AX_HELPER: builtHelper }));
   assert.equal(status.available, true);
-  assert.equal(status.helper_version, "0.5.0");
+  assert.equal(status.helper_version, "1.0.0");
   assert.match(status.permission, /^(granted|denied)$/);
 });
 

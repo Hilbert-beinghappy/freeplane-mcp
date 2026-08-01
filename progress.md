@@ -9,7 +9,7 @@
 - Current work: build a reproducible Freeplane menu/API inventory and GPT Pro consultation package.
 - First package build exposed an incorrect user-guide category traversal; the generated deliverable was withheld and the parser/verification contract was tightened.
 - ZIP verification then caught ExFAT `._*` metadata members; filtering was moved into the generator rather than relying on cleanup after packaging.
-- Moved the Git repository to `/Volumes/huawei/项目实战/freeplane-mcp` at the user's request; disabled Git file-mode tracking for ExFAT and removed only migration-created AppleDouble helper files.
+- Moved the Git repository to the user-selected ExFAT project volume; disabled Git file-mode tracking and removed only migration-created AppleDouble helper files.
 - Rebuilt the package and passed manifest hash verification for 17 files, ZIP CRC/UTF-8 checks for 18 members, privacy checks, inventory thresholds, and real-example size checks.
 - v0.0 deliverable created at `分析结果/Freeplane_MCP_GPTPro咨询包_20260801.zip`.
 - The invalid intermediate directory and ZIP were moved to macOS Trash and remain recoverable.
@@ -56,7 +56,10 @@
 - Implemented revision- and file-hash-guarded document create/template/open/save/save-as/close/revert with deterministic default-template resolution and bound one-time confirmation for overwrites, dirty close, and revert.
 - Qualified native map-scope PNG/PDF/SVG/static-HTML export through sibling staging, structural validation, SHA-256 readback, atomic publication, and durable overwrite backup. The gate exposed PDF's asynchronous writer, Batik's fixed SVG DTD/closing syntax, and three competing HTML engines; each was resolved by observed stable behavior or implementation identity rather than order or delay guesses.
 - Implemented lexical closed-file ordinary-node `TEXT` writeback with configured-path/open-map guards, hostile XML denial, APFS clone replacement, xattr preservation, and original/candidate/manifest recovery evidence.
-- The final v0.4 isolated gate passed 26/26 checks. All lifecycle modes, four exports, confirmation binding, hostile path/XML denial, unknown-XML byte preservation, secure-input blocking, and preservation of user Freeplane PID 43117 passed.
+- The final v0.4 isolated gate passed 26/26 checks. All lifecycle modes, four exports, confirmation binding, hostile path/XML denial, unknown-XML byte preservation, secure-input blocking, and preservation of the one pre-existing user Freeplane process passed.
 - Implemented the v0.5 exact GUI allowlist, signed Swift Accessibility helper, bridge presentation/preview readback, revision/idempotency guards, and the twelfth `freeplane_invoke_action` tool.
-- The final v0.5 bilingual isolated gate passed 30/30 checks. English and Simplified Chinese presentation navigation, focus recovery, print-preview cancellation, policy rejection, content immutability, helper signing, and exact preservation of user Freeplane PID 43117 all passed.
-- Current implementation gate: v1.0 local stable release. Installer/uninstaller, diagnostics, recovery, compatibility documentation, clean-profile installation, restart/crash recovery, and the frozen final capability table remain to be qualified.
+- The final v0.5 bilingual isolated gate passed 30/30 checks. English and Simplified Chinese presentation navigation, focus recovery, print-preview cancellation, policy rejection, content immutability, helper signing, and exact preservation of the one pre-existing user Freeplane process all passed.
+- Committed v0.5 as `bcde844 feat(gui): qualify v0.5 accessibility actions`, pushed it to the public GitHub branch, and verified the remote SHA plus anonymous commit access.
+- Implemented the v1.0 local installer/uninstaller, dedicated-profile launcher, redacted doctor, explicit map/artifact and idempotency recovery, compatibility/security/recovery documentation, SPDX SBOM, and frozen final capability table.
+- Frozen the v1.0 execution boundary: explicit temporary install/profile paths, manifest-owned uninstall, read-only redacted diagnostics, no automatic recovery choice, no public listener/upload/telemetry/arbitrary scripts, and no formal release or licensing claim.
+- The final v1.0 isolated gate passed 16/16 checks with all nine hard gates true. It verified 947 hash-owned install files, repeated install, zero public listeners, least permissions, graceful and forced-crash restarts, explicit recovery, recoverable uninstall, capability-hash equality, and exact preservation of the pre-existing user Freeplane process.
