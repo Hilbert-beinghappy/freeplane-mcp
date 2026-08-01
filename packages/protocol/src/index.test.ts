@@ -4,7 +4,9 @@ import test from "node:test";
 import {
   ApplyInputSchema,
   ChangesInputSchema,
+  DocumentInputSchema,
   ERROR_CATEGORIES,
+  ExportInputSchema,
   ReadInputSchema,
   ResponseEnvelopeSchema,
   SearchInputSchema,
@@ -130,5 +132,41 @@ test("v0.3 view contract allows literal filtering only", () => {
     map_id: "map",
     expected_view_revision: 2,
     query: { mode: "literal", value: "ignored" },
+  }).success, false);
+});
+
+test("v0.4 document and export contracts keep paths, revisions, and formats explicit", () => {
+  const idempotency_key = "a8bfce4e-9f3d-4d5d-a63a-c37f4b993202";
+  assert.equal(DocumentInputSchema.safeParse({ action: "create", idempotency_key }).success, true);
+  assert.equal(DocumentInputSchema.safeParse({
+    action: "save_as",
+    map_id: "map",
+    path: "/tmp/map.mm",
+    expected_content_revision: 4,
+    expected_file_revision: null,
+    idempotency_key,
+  }).success, true);
+  assert.equal(DocumentInputSchema.safeParse({ action: "open", path: "relative.mm", idempotency_key }).success, false);
+  assert.equal(DocumentInputSchema.safeParse({
+    action: "close",
+    map_id: "map",
+    close_mode: "discard",
+    expected_content_revision: 4,
+    idempotency_key,
+  }).success, false);
+  assert.equal(ExportInputSchema.safeParse({
+    map_id: "map",
+    format_id: "pdf",
+    destination: "/tmp/map.pdf",
+    expected_content_revision: 4,
+    idempotency_key,
+  }).success, true);
+  assert.equal(ExportInputSchema.safeParse({
+    map_id: "map",
+    scope: "selection",
+    format_id: "docx",
+    destination: "/tmp/map.docx",
+    expected_content_revision: 4,
+    idempotency_key,
   }).success, false);
 });

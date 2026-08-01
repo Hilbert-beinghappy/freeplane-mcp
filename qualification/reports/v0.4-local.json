@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "stage": "v0.4",
+  "generated_at": "2026-08-01T12:59:52.444Z",
+  "passed": true,
+  "qualification_report": "v0.4-ff6dab76e60a",
+  "freeplane": {
+    "version": "1.13.3",
+    "build_fingerprint": "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822"
+  },
+  "addon_version": "0.4.0",
+  "server_version": "0.4.0",
+  "inherited_qualification_reports": [
+    {
+      "stage": "v0.3",
+      "qualification_report": "v0.3-ff6dab76e60a",
+      "sha256": "6430fe244e4e2ddc529345b6ac437f835cc22997ed6475071aaa20bb144c7bd6"
+    }
+  ],
+  "checks": [
+    {
+      "id": "build.candidate",
+      "status": "pass",
+      "evidence": "TypeScript build, Java compile, JAR packaging, and BridgeSelfTest passed"
+    },
+    {
+      "id": "preservation.v0.3_gate_inherited",
+      "status": "pass",
+      "evidence": "v0.3 qualified report 6430fe244e4e2ddc529345b6ac437f835cc22997ed6475071aaa20bb144c7bd6 remains the organization evidence base"
+    },
+    {
+      "id": "isolation.bridge_identity",
+      "status": "pass",
+      "evidence": "isolated 0.4.0 bridge uses dynamic loopback binding and private discovery"
+    },
+    {
+      "id": "mcp.eleven_tool_surface",
+      "status": "pass",
+      "evidence": "exact v0.4 eleven-tool surface registered"
+    },
+    {
+      "id": "mcp.qualification_identity",
+      "status": "pass",
+      "evidence": "candidate manifest, server, bridge, and protocol identity agree"
+    },
+    {
+      "id": "document.external_conflict",
+      "status": "pass",
+      "evidence": "external disk revision is rejected before save"
+    },
+    {
+      "id": "document.external_conflict_confirmation",
+      "status": "pass",
+      "evidence": "bound confirmation overwrote only the observed external revision and returned file hash readback"
+    },
+    {
+      "id": "export.png",
+      "status": "pass",
+      "evidence": "PNG artifact passed native export, magic/structure, and hash verification"
+    },
+    {
+      "id": "export.pdf",
+      "status": "pass",
+      "evidence": "PDF artifact passed native export, magic/structure, and hash verification"
+    },
+    {
+      "id": "export.svg",
+      "status": "pass",
+      "evidence": "SVG artifact passed native export, magic/structure, and hash verification"
+    },
+    {
+      "id": "export.html",
+      "status": "pass",
+      "evidence": "HTML artifact passed native export, magic/structure, and hash verification"
+    },
+    {
+      "id": "export.overwrite_confirmation_backup",
+      "status": "pass",
+      "evidence": "export overwrite was revision-bound and retained a private original artifact backup"
+    },
+    {
+      "id": "document.close_cancel",
+      "status": "pass",
+      "evidence": "cancel kept the dirty map open with zero effect"
+    },
+    {
+      "id": "document.close_save_then_close",
+      "status": "pass",
+      "evidence": "dirty save_then_close required confirmation, persisted content, and removed the map from the registry"
+    },
+    {
+      "id": "document.save_as_conflict",
+      "status": "pass",
+      "evidence": "existing save_as target requires explicit overwrite intent"
+    },
+    {
+      "id": "document.create_save_as",
+      "status": "pass",
+      "evidence": "new document replaced a confirmed target with exact file hash readback"
+    },
+    {
+      "id": "document.revert",
+      "status": "pass",
+      "evidence": "revert discarded unsaved state and reopened the exact confirmed disk revision"
+    },
+    {
+      "id": "document.template_discard_close",
+      "status": "pass",
+      "evidence": "template copy was isolated and dirty discard_then_close required confirmation"
+    },
+    {
+      "id": "document.open_close",
+      "status": "pass",
+      "evidence": "qualified open entered and clean close left the registry"
+    },
+    {
+      "id": "file_write.lexical_unknown_xml_xattr_backup",
+      "status": "pass",
+      "evidence": "only target TEXT bytes changed; BOM, comment, namespace, unknown XML, backup pair, and xattr were preserved"
+    },
+    {
+      "id": "file_write.open_map_guard",
+      "status": "pass",
+      "evidence": "closed-file route rejects a path currently open in Freeplane"
+    },
+    {
+      "id": "policy.path_xxe_matrix",
+      "status": "pass",
+      "evidence": "DTD/XXE, symlink, and outside-root document opens are rejected before Freeplane"
+    },
+    {
+      "id": "policy.encryption_secure_input_blocked",
+      "status": "pass",
+      "evidence": "node encryption remains unsupported because no qualified secret-input field exists"
+    },
+    {
+      "id": "isolation.source_fixture_unchanged",
+      "status": "pass",
+      "evidence": "repository fixture bytes were untouched"
+    },
+    {
+      "id": "mcp.stderr_private",
+      "status": "pass",
+      "evidence": "MCP and Freeplane stderr contain no token or closed-map text"
+    },
+    {
+      "id": "isolation.user_process_preserved",
+      "status": "pass",
+      "evidence": "pre-existing Freeplane PIDs preserved exactly: 43117"
+    }
+  ],
+  "metrics": {},
+  "hard_gate": {
+    "exact_tool_surface": true,
+    "lifecycle_roundtrip": true,
+    "conflicts_and_confirmation": true,
+    "four_verified_exports": true,
+    "lexical_file_write": true,
+    "open_file_write_denied": true,
+    "path_and_xxe_denied": true,
+    "encryption_secure_input_blocked": true,
+    "user_process_preserved": true
+  }
+}

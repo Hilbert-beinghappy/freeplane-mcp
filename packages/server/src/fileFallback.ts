@@ -1,7 +1,11 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { execFile as execFileCallback } from "node:child_process";
 import { constants } from "node:fs";
-import { lstat, open, realpath } from "node:fs/promises";
+import { chmod, lstat, mkdir, open, realpath, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { promisify } from "node:util";
+
+const execFile = promisify(execFileCallback);
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_XML_DEPTH = 256;
@@ -60,7 +64,8 @@ export interface FileMap {
 
 export class FileFallbackError extends Error {
   constructor(
-    readonly category: "PATH_DENIED" | "XML_UNSAFE" | "XML_INVALID" | "LIMIT_EXCEEDED" | "MAP_NOT_FOUND",
+    readonly category: "PATH_DENIED" | "XML_UNSAFE" | "XML_INVALID" | "LIMIT_EXCEEDED" | "MAP_NOT_FOUND"
+      | "FILE_CONFLICT" | "ROUNDTRIP_UNSAFE" | "RECOVERY_REQUIRED",
     message: string,
   ) {
     super(message);
@@ -98,12 +103,12 @@ function mapId(canonicalPath: string): string {
   return `file:${digest(canonicalPath)}`;
 }
 
-function underRoot(candidate: string, root: string): boolean {
+export function underRoot(candidate: string, root: string): boolean {
   const relative = path.relative(root, candidate);
   return relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative));
 }
 
-async function secureRead(candidate: string, config: FileFallbackConfig) {
+export async function secureRead(candidate: string, config: FileFallbackConfig) {
   const absolute = path.resolve(candidate);
   const entry = await lstat(absolute).catch(() => null);
   if (!entry || !entry.isFile() || entry.isSymbolicLink()) {
@@ -493,4 +498,242 @@ export async function requireConfiguredMap(mapIdentity: string, config: FileFall
   const found = maps.find((map) => map.mapId === mapIdentity);
   if (!found) throw new FileFallbackError("MAP_NOT_FOUND", `Configured file map is unavailable: ${mapIdentity}`);
   return found;
+}
+
+export interface FileTextUpdate {
+  nodeId: string;
+  text: string;
+}
+
+interface TextSpan {
+  nodeId: string;
+  start: number;
+  end: number;
+  quote: string;
+}
+
+function xmlString(bytes: Buffer): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+  } catch {
+    throw new FileFallbackError("XML_INVALID", "Map is not valid UTF-8");
+  }
+}
+
+function textSpans(xml: string, nodeIds: Set<string>): TextSpan[] {
+  const found: TextSpan[] = [];
+  let index = 0;
+  while (index < xml.length) {
+    const start = xml.indexOf("<", index);
+    if (start === -1) break;
+    if (xml.startsWith("<!--", start)) {
+      const end = xml.indexOf("-->", start + 4);
+      if (end === -1) throw new FileFallbackError("XML_INVALID", "Malformed XML comment");
+      index = end + 3;
+      continue;
+    }
+    if (xml.startsWith("<![CDATA[", start)) {
+      const end = xml.indexOf("]]>", start + 9);
+      if (end === -1) throw new FileFallbackError("XML_INVALID", "Unterminated CDATA section");
+      index = end + 3;
+      continue;
+    }
+    if (xml.startsWith("<?", start)) {
+      const end = xml.indexOf("?>", start + 2);
+      if (end === -1) throw new FileFallbackError("XML_INVALID", "Unterminated processing instruction");
+      index = end + 2;
+      continue;
+    }
+    const end = tagEnd(xml, start);
+    const raw = xml.slice(start, end);
+    if (!raw.startsWith("</") && !raw.startsWith("<!")) {
+      const parsed = parseStartTag(raw);
+      if (parsed.name.toLowerCase() === "node") {
+        const nodeId = parsed.attributes.get("ID");
+        if (nodeId && nodeIds.has(nodeId)) {
+          const text = /(\sTEXT\s*=\s*)(["'])([\s\S]*?)\2/u.exec(raw);
+          if (!text || text.index === undefined) {
+            throw new FileFallbackError("ROUNDTRIP_UNSAFE", `Node ${nodeId} has no lexical TEXT attribute`);
+          }
+          const prefix = text[1]!;
+          const quote = text[2]!;
+          const value = text[3]!;
+          const valueOffset = text.index + prefix.length + quote.length;
+          found.push({
+            nodeId,
+            start: start + valueOffset,
+            end: start + valueOffset + value.length,
+            quote,
+          });
+        }
+      }
+    }
+    index = end;
+  }
+  for (const nodeId of nodeIds) {
+    if (found.filter((span) => span.nodeId === nodeId).length !== 1) {
+      throw new FileFallbackError("ROUNDTRIP_UNSAFE", `Node ${nodeId} is missing or duplicated in lexical XML`);
+    }
+  }
+  return found;
+}
+
+function escapeAttribute(value: string, quote: string): string {
+  for (const character of value) {
+    const code = character.codePointAt(0) ?? 0;
+    if (code !== 0x9 && code !== 0xa && code !== 0xd
+        && (code < 0x20 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff))) {
+      throw new FileFallbackError("XML_INVALID", "Node text contains an invalid XML character");
+    }
+  }
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll(quote, quote === '"' ? "&quot;" : "&apos;");
+}
+
+function replaceSpans(xml: string, spans: TextSpan[], values: Map<string, string>): string {
+  let value = xml;
+  for (const span of [...spans].sort((left, right) => right.start - left.start)) {
+    const replacement = values.get(span.nodeId);
+    if (replacement === undefined) throw new FileFallbackError("ROUNDTRIP_UNSAFE", "Text patch value is unavailable");
+    value = `${value.slice(0, span.start)}${escapeAttribute(replacement, span.quote)}${value.slice(span.end)}`;
+  }
+  return value;
+}
+
+function maskTexts(xml: string, nodeIds: Set<string>): string {
+  const marker = new Map([...nodeIds].map((nodeId) => [nodeId, `__FREEPLANE_MCP_TEXT_${nodeId}__`]));
+  return replaceSpans(xml, textSpans(xml, nodeIds), marker);
+}
+
+function findNode(root: MmNode, nodeId: string): MmNode | null {
+  const pending = [root];
+  while (pending.length > 0) {
+    const node = pending.pop();
+    if (!node) continue;
+    if (node.id === nodeId) return node;
+    pending.push(...node.children);
+  }
+  return null;
+}
+
+async function writeSynced(target: string, bytes: Buffer | string) {
+  const handle = await open(target, constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY, 0o600);
+  try {
+    await handle.writeFile(bytes);
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+}
+
+export async function writeClosedMapText(
+  map: FileMap,
+  expectedSha256: string,
+  updates: FileTextUpdate[],
+  config: FileFallbackConfig,
+  backupRoot: string,
+) {
+  if (updates.length === 0 || updates.length > 100 || new Set(updates.map((update) => update.nodeId)).size !== updates.length) {
+    throw new FileFallbackError("ROUNDTRIP_UNSAFE", "File text updates require 1-100 distinct nodes");
+  }
+  const before = await secureRead(map.canonicalPath, config);
+  const beforeSha256 = digest(before.bytes);
+  if (beforeSha256 !== expectedSha256 || beforeSha256 !== map.sha256) {
+    throw new FileFallbackError("FILE_CONFLICT", "File changed after its expected revision was read");
+  }
+  const originalXml = xmlString(before.bytes);
+  const nodeIds = new Set(updates.map((update) => update.nodeId));
+  const parsedBefore = parseMmXml(before.bytes, map.mapId, map.content.name);
+  for (const update of updates) {
+    const node = findNode(parsedBefore.root, update.nodeId);
+    if (!node) throw new FileFallbackError("MAP_NOT_FOUND", `Node is unavailable: ${update.nodeId}`);
+    if (node.encrypted || node.text.startsWith("=")) {
+      throw new FileFallbackError("ROUNDTRIP_UNSAFE", "Encrypted and formula nodes are not eligible for file writeback");
+    }
+  }
+  const values = new Map(updates.map((update) => [update.nodeId, update.text]));
+  const candidateXml = replaceSpans(originalXml, textSpans(originalXml, nodeIds), values);
+  if (maskTexts(originalXml, nodeIds) !== maskTexts(candidateXml, nodeIds)) {
+    throw new FileFallbackError("ROUNDTRIP_UNSAFE", "File writeback changed bytes outside target TEXT values");
+  }
+  const candidateBytes = Buffer.from(candidateXml, "utf8");
+  const parsedAfter = parseMmXml(candidateBytes, map.mapId, map.content.name);
+  for (const update of updates) {
+    if (findNode(parsedAfter.root, update.nodeId)?.text !== update.text) {
+      throw new FileFallbackError("ROUNDTRIP_UNSAFE", `Node ${update.nodeId} failed semantic readback`);
+    }
+  }
+  if (countNodes(parsedAfter.root) !== map.nodeCount) {
+    throw new FileFallbackError("ROUNDTRIP_UNSAFE", "File writeback changed the node count");
+  }
+
+  const transactionId = randomUUID();
+  const backupDirectory = path.join(backupRoot, transactionId);
+  await mkdir(backupDirectory, { recursive: false, mode: 0o700 });
+  await chmod(backupDirectory, 0o700);
+  const manifest = {
+    schema_version: 1,
+    transaction_id: transactionId,
+    target_sha256_before: beforeSha256,
+    candidate_sha256: digest(candidateBytes),
+    node_ids: updates.map((update) => update.nodeId),
+    status: "prepared",
+  };
+  await Promise.all([
+    writeSynced(path.join(backupDirectory, "original.mm"), before.bytes),
+    writeSynced(path.join(backupDirectory, "candidate.mm"), candidateBytes),
+    writeSynced(path.join(backupDirectory, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`),
+  ]);
+  const backupDirectoryHandle = await open(backupDirectory, constants.O_RDONLY);
+  try { await backupDirectoryHandle.sync(); } finally { await backupDirectoryHandle.close(); }
+  const backupRootHandle = await open(backupRoot, constants.O_RDONLY);
+  try { await backupRootHandle.sync(); } finally { await backupRootHandle.close(); }
+
+  const temporary = path.join(path.dirname(map.canonicalPath), `.${path.basename(map.canonicalPath)}.${transactionId}.tmp`);
+  try {
+    // Native clonefile preserves macOS metadata and xattrs; Node's force-clone flag is ENOSYS on macOS.
+    await execFile("/bin/cp", ["-c", "-p", "-n", map.canonicalPath, temporary], {
+      timeout: 10_000,
+      windowsHide: true,
+    });
+    const temporaryHandle = await open(temporary, constants.O_RDWR | constants.O_NOFOLLOW);
+    try {
+      const cloned = await temporaryHandle.readFile();
+      if (digest(cloned) !== beforeSha256) {
+        throw new FileFallbackError("FILE_CONFLICT", "Cloned file diverged from the planned revision");
+      }
+      await temporaryHandle.truncate(0);
+      await temporaryHandle.write(candidateBytes, 0, candidateBytes.length, 0);
+      await temporaryHandle.sync();
+    } finally {
+      await temporaryHandle.close();
+    }
+    const current = await secureRead(map.canonicalPath, config);
+    if (digest(current.bytes) !== beforeSha256) {
+      throw new FileFallbackError("FILE_CONFLICT", "File changed before atomic replacement");
+    }
+    await rename(temporary, map.canonicalPath);
+    const parent = await open(path.dirname(map.canonicalPath), constants.O_RDONLY);
+    try { await parent.sync(); } finally { await parent.close(); }
+  } catch (error) {
+    await unlink(temporary).catch(() => undefined);
+    if (error instanceof FileFallbackError) throw error;
+    throw new FileFallbackError("RECOVERY_REQUIRED", "Atomic APFS file replacement failed; backup evidence was retained");
+  }
+
+  const after = await secureRead(map.canonicalPath, config);
+  const afterSha256 = digest(after.bytes);
+  if (afterSha256 !== digest(candidateBytes)) {
+    throw new FileFallbackError("RECOVERY_REQUIRED", "Replaced file hash diverged; backup evidence was retained");
+  }
+  return {
+    transactionId,
+    beforeSha256,
+    afterSha256,
+    backupDirectory,
+    nodeCount: map.nodeCount,
+  };
 }

@@ -19,6 +19,7 @@ import {
 const apply: ApplyInput = {
   map_id: "map",
   expected_content_revision: 1,
+  expected_file_revision: null,
   expected_view_revision: null,
   idempotency_key: "a8bfce4e-9f3d-4d5d-a63a-c37f4b993202",
   dry_run: false,

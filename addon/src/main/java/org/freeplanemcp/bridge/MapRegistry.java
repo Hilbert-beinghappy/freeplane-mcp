@@ -9,6 +9,9 @@ import org.freeplane.api.MindMap;
 import org.freeplane.api.Node;
 import org.freeplane.api.NodeCondition;
 import org.freeplane.api.NodeChangeListener;
+import org.freeplane.core.ui.CaseSensitiveFileNameExtensionFilter;
+import org.freeplane.features.export.mindmapmode.ExportController;
+import org.freeplane.features.export.mindmapmode.IExportEngine;
 import org.freeplane.features.filter.Filter;
 import org.freeplane.features.filter.FilterController;
 import org.freeplane.features.map.AlwaysUnfoldedNode;
@@ -19,10 +22,12 @@ import org.freeplane.features.map.NodeDeletionEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.NodeMoveEvent;
 import org.freeplane.features.map.SummaryNode;
+import org.freeplane.features.url.mindmapmode.MFileManager;
 import org.freeplane.plugin.script.proxy.AbstractProxy;
 import org.freeplane.view.swing.map.NodeView;
 
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileFilter;
 import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
@@ -246,6 +251,244 @@ final class MapRegistry implements AutoCloseable {
         List<State> states = new ArrayList<>(statesById.values());
         states.sort(Comparator.comparing(state -> state.mapId));
         return states.stream().map(this::summary).toList();
+    }
+
+    Map<String, Object> document(JsonNode request) {
+        assertMainThread();
+        String action = BridgeSupport.requiredText(request, "action");
+        if (Set.of("create", "create_from_template", "open").contains(action)) {
+            MindMap created = switch (action) {
+                case "create" -> newDefaultMapWithoutDialog();
+                case "create_from_template" -> controller.newMapFromTemplate(
+                        requireMmPath(request, "template_path", true).toFile());
+                case "open" -> controller.load(requireMmPath(request, "path", true).toFile()).withView().getMindMap();
+                default -> throw new AssertionError(action);
+            };
+            refreshMaps();
+            State state = statesByModel.get(modelOf(created));
+            if (state == null) throw new BridgeException(422, "POSTCONDITION_FAILED", "Document did not enter the live registry");
+            reconcile(state, "map.lifecycle", List.of("lifecycle"), List.of());
+            return map("action", action, "map", summary(state));
+        }
+
+        State state = requireState(BridgeSupport.requiredText(request, "map_id"));
+        reconcile(state, "snapshot.reconciled", List.of("document_precondition"), List.of());
+        long expected = BridgeSupport.requiredNonNegativeLong(request, "expected_content_revision");
+        if (state.contentRevision != expected) {
+            throw new BridgeException(409, "REVISION_CONFLICT", "Map content revision changed", map(
+                    "expected_content_revision", expected,
+                    "actual_content_revision", state.contentRevision));
+        }
+        if (state.recoveryRequired) {
+            throw new BridgeException(409, "RECOVERY_REQUIRED", "Map requires recovery before document operations");
+        }
+
+        switch (action) {
+            case "save" -> {
+                if (state.map.getFile() == null) {
+                    throw new BridgeException(400, "VALIDATION_ERROR", "Unsaved maps require save_as with an explicit path");
+                }
+                require(state.map.save(false) && state.map.isSaved(), "Native save did not complete");
+                reconcile(state, "map.saved", List.of("saved"), List.of());
+                return map("action", action, "map", summary(state));
+            }
+            case "save_as" -> {
+                Path target = requireMmPath(request, "path", false);
+                boolean overwriteAuthorized = request.path("overwrite_authorized").asBoolean(false);
+                if (Files.exists(target, LinkOption.NOFOLLOW_LINKS) && !overwriteAuthorized) {
+                    throw new BridgeException(409, "CONFIRMATION_REQUIRED", "Existing save_as target requires confirmation");
+                }
+                require(state.map.saveAs(target.toFile()) && state.map.isSaved(), "Native save_as did not complete");
+                reconcile(state, "map.saved_as", List.of("saved", "file"), List.of());
+                return map("action", action, "map", summary(state));
+            }
+            case "close" -> {
+                String mode = BridgeSupport.requiredText(request, "close_mode");
+                if (!Set.of("save_then_close", "discard_then_close", "cancel").contains(mode)) {
+                    throw new BridgeException(400, "VALIDATION_ERROR", "Unsupported close mode");
+                }
+                if (mode.equals("cancel")) return map("action", action, "cancelled", true, "map", summary(state));
+                if (!state.map.isSaved() && !request.path("destructive_authorized").asBoolean(false)) {
+                    throw new BridgeException(409, "CONFIRMATION_REQUIRED", "Closing a dirty map requires confirmation");
+                }
+                if (mode.equals("save_then_close")) {
+                    if (state.map.getFile() == null) {
+                        throw new BridgeException(400, "VALIDATION_ERROR", "save_then_close requires a saved map path");
+                    }
+                    require(state.map.save(false) && state.map.isSaved(), "Save before close did not complete");
+                }
+                boolean closed = state.map.close(mode.equals("discard_then_close"), false);
+                require(closed, "Native close did not complete");
+                refreshMaps();
+                require(!statesById.containsKey(state.mapId), "Closed map remained in the live registry");
+                return map("action", action, "closed", true, "closed_map_id", state.mapId);
+            }
+            case "revert" -> {
+                if (!request.path("destructive_authorized").asBoolean(false)) {
+                    throw new BridgeException(409, "CONFIRMATION_REQUIRED", "Revert requires confirmation");
+                }
+                File file = state.map.getFile();
+                if (file == null) throw new BridgeException(400, "VALIDATION_ERROR", "Unsaved maps cannot be reverted");
+                Path source = requireExistingMmPath(file.toPath());
+                require(state.map.close(true, false), "Map did not close for revert");
+                MindMap reopened = controller.load(source.toFile()).withView().getMindMap();
+                refreshMaps();
+                State reopenedState = statesByModel.get(modelOf(reopened));
+                if (reopenedState == null) throw new BridgeException(422, "POSTCONDITION_FAILED", "Reverted map did not reopen");
+                return map("action", action, "replaced_map_id", state.mapId, "map", summary(reopenedState));
+            }
+            default -> throw new BridgeException(400, "VALIDATION_ERROR", "Unsupported document action: " + action);
+        }
+    }
+
+    private MindMap newDefaultMapWithoutDialog() {
+        MFileManager files = MFileManager.getController(
+                org.freeplane.features.mode.Controller.getCurrentModeController());
+        File template = files == null ? null : files.defaultTemplateFile();
+        if (template == null) throw new BridgeException(503, "CAPABILITY_UNAVAILABLE", "Freeplane has no default template");
+        return controller.newMapFromTemplate(template);
+    }
+
+    Map<String, Object> exportMap(JsonNode request) {
+        assertMainThread();
+        State state = requireState(BridgeSupport.requiredText(request, "map_id"));
+        reconcile(state, "snapshot.reconciled", List.of("export_precondition"), List.of());
+        long expected = BridgeSupport.requiredNonNegativeLong(request, "expected_content_revision");
+        if (state.contentRevision != expected) {
+            throw new BridgeException(409, "REVISION_CONFLICT", "Map content revision changed", map(
+                    "expected_content_revision", expected,
+                    "actual_content_revision", state.contentRevision));
+        }
+        if (activeStateWithoutRefresh() != state) {
+            throw new BridgeException(409, "SELECTION_CONFLICT", "Qualified export requires the active Freeplane map");
+        }
+        if (!request.path("scope").asText("").equals("map")) {
+            throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Only map-scope export is qualified");
+        }
+        String format = BridgeSupport.requiredText(request, "format_id");
+        if (!Set.of("png", "pdf", "svg", "html").contains(format)) {
+            throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Export format is not qualified: " + format);
+        }
+        Path destination = requireExportPath(request, format);
+        if (!(state.map instanceof AbstractProxy<?> proxy)) {
+            throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Qualified export internals are unavailable");
+        }
+        ExportController exports = ExportController.getController(proxy.getModeController());
+        if (exports == null) throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Export controller is unavailable");
+        IExportEngine engine = null;
+        for (Map.Entry<FileFilter, IExportEngine> entry : exports.getMapExportEngines().entrySet()) {
+            if (entry.getKey() instanceof CaseSensitiveFileNameExtensionFilter filter
+                    && format.equalsIgnoreCase(filter.getExtensionProposal())) {
+                if (format.equals("html") && !entry.getValue().getClass().getName()
+                        .equals("org.freeplane.features.export.mindmapmode.ExportToHTML")) continue;
+                if (engine != null) throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Export format is ambiguous: " + format);
+                engine = entry.getValue();
+            }
+        }
+        if (engine == null) throw new BridgeException(503, "CAPABILITY_UNVERIFIED", "Export engine is unavailable: " + format);
+        engine.export(List.of(nodeModelOf(state.map.getRoot())), destination.toFile());
+        awaitExportArtifact(destination);
+        return map(
+                "map_id", state.mapId,
+                "format_id", format,
+                "scope", "map",
+                "destination", destination.toString(),
+                "content_revision", state.contentRevision,
+                "view_revision", state.viewRevision);
+    }
+
+    private static void awaitExportArtifact(Path destination) {
+        long deadline = System.nanoTime() + 30_000_000_000L;
+        long lastSize = -1;
+        long lastModified = -1;
+        int stableSamples = 0;
+        while (System.nanoTime() < deadline) {
+            try {
+                BasicFileAttributes attributes = Files.readAttributes(
+                        destination, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                if (!attributes.isRegularFile() || attributes.isSymbolicLink()) {
+                    throw new BridgeException(422, "POSTCONDITION_FAILED", "Export did not create a regular artifact");
+                }
+                long size = attributes.size();
+                long modified = attributes.lastModifiedTime().toMillis();
+                stableSamples = size > 0 && size == lastSize && modified == lastModified ? stableSamples + 1 : 0;
+                if (stableSamples >= 5) return;
+                lastSize = size;
+                lastModified = modified;
+            } catch (java.nio.file.NoSuchFileException missing) {
+                // Vector exporters finish asynchronously on the qualified build.
+            } catch (IOException error) {
+                throw new BridgeException(422, "POSTCONDITION_FAILED", "Export artifact could not be read");
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new BridgeException(500, "FREEPLANE_ERROR", "Export artifact wait was interrupted");
+            }
+        }
+        throw new BridgeException(422, "POSTCONDITION_FAILED", "Export did not create a stable non-empty artifact");
+    }
+
+    private static Path requireMmPath(JsonNode request, String field, boolean existing) {
+        String value = BridgeSupport.requiredText(request, field);
+        Path path;
+        try { path = Path.of(value); }
+        catch (RuntimeException invalid) { throw new BridgeException(400, "PATH_DENIED", "Document path is invalid"); }
+        if (!path.isAbsolute() || !path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".mm")) {
+            throw new BridgeException(400, "PATH_DENIED", "Document path must be an absolute .mm path");
+        }
+        return existing ? requireExistingMmPath(path) : requireOutputPath(path);
+    }
+
+    private static Path requireExistingMmPath(Path path) {
+        try {
+            BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+            if (!attributes.isRegularFile() || attributes.isSymbolicLink()) {
+                throw new BridgeException(400, "PATH_DENIED", "Document source must be a regular non-symlink file");
+            }
+            return path.toRealPath();
+        } catch (IOException error) {
+            throw new BridgeException(400, "PATH_DENIED", "Document source is unavailable");
+        }
+    }
+
+    private static Path requireOutputPath(Path path) {
+        try {
+            Path parent = path.getParent();
+            if (parent == null) throw new BridgeException(400, "PATH_DENIED", "Document destination has no parent");
+            Path canonical = parent.toRealPath().resolve(path.getFileName());
+            if (!Files.isDirectory(parent.toRealPath(), LinkOption.NOFOLLOW_LINKS)) {
+                throw new BridgeException(400, "PATH_DENIED", "Document destination parent is not a directory");
+            }
+            if (Files.exists(canonical, LinkOption.NOFOLLOW_LINKS)) {
+                BasicFileAttributes attributes = Files.readAttributes(canonical, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                if (!attributes.isRegularFile() || attributes.isSymbolicLink()) {
+                    throw new BridgeException(400, "PATH_DENIED", "Document destination must be a regular non-symlink file");
+                }
+            }
+            return canonical;
+        } catch (IOException error) {
+            throw new BridgeException(400, "PATH_DENIED", "Document destination is unavailable");
+        }
+    }
+
+    private static Path requireExportPath(JsonNode request, String format) {
+        Path path;
+        try { path = Path.of(BridgeSupport.requiredText(request, "destination")); }
+        catch (RuntimeException invalid) { throw new BridgeException(400, "PATH_DENIED", "Export destination is invalid"); }
+        if (!path.isAbsolute() || !path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith("." + format)) {
+            throw new BridgeException(400, "PATH_DENIED", "Export destination extension does not match format_id");
+        }
+        Path canonical = requireOutputPath(path);
+        if (Files.exists(canonical, LinkOption.NOFOLLOW_LINKS)) {
+            throw new BridgeException(409, "FILE_CONFLICT", "Bridge export staging path already exists");
+        }
+        return canonical;
+    }
+
+    private static void require(boolean condition, String message) {
+        if (!condition) throw new BridgeException(422, "POSTCONDITION_FAILED", message);
     }
 
     private Map<String, Object> summary(State state) {

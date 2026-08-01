@@ -34,7 +34,7 @@ import static org.freeplanemcp.bridge.BridgeSupport.BridgeException;
 import static org.freeplanemcp.bridge.BridgeSupport.map;
 
 public final class FreeplaneBridge implements AutoCloseable {
-    private static final String ADDON_VERSION = "0.3.0";
+    private static final String ADDON_VERSION = "0.4.0";
     private static final String QUALIFIED_BUILD_FINGERPRINT = "ff6dab76e60acfb0666ee8ac90dcf2df5bbb1975c2d99eab59ca3f08dcda1822";
     private static final int REQUESTS_PER_SECOND = 240;
     private static FreeplaneBridge instance;
@@ -258,6 +258,12 @@ public final class FreeplaneBridge implements AutoCloseable {
         }
         if (method.equals("POST") && path.equals("/v1/view")) {
             return onMain(() -> registry.withEventContext("mcp", null, () -> registry.view(body)));
+        }
+        if (method.equals("POST") && path.equals("/v1/document")) {
+            return onMain(() -> registry.withEventContext("mcp", null, () -> registry.document(body)));
+        }
+        if (method.equals("POST") && path.equals("/v1/export")) {
+            return onMain(() -> registry.exportMap(body));
         }
         if (method.equals("POST") && path.equals("/v1/transactions/plan")) {
             return onMain(() -> transactions.plan(body));

@@ -507,6 +507,7 @@ export const ApplyInputSchema = z
   .object({
     map_id: z.string().min(1).max(512),
     expected_content_revision: z.int().nonnegative(),
+    expected_file_revision: z.string().regex(/^[a-f0-9]{64}$/).nullable().default(null),
     expected_view_revision: z.int().nonnegative().nullable().default(null),
     idempotency_key: z.uuid(),
     dry_run: z.boolean().default(true),
@@ -552,6 +553,80 @@ export const ViewInputSchema = z.discriminatedUnion("action", [
 ]);
 
 export type ViewInput = z.infer<typeof ViewInputSchema>;
+
+const AbsoluteLocalPathSchema = z.string().min(1).max(4_096).regex(/^\//);
+const FileRevisionSchema = z.string().regex(/^[a-f0-9]{64}$/).nullable().default(null);
+const DocumentWriteFields = {
+  overwrite: z.boolean().default(false),
+  dry_run: z.boolean().default(true),
+  idempotency_key: z.uuid(),
+  confirmation: ConfirmationSchema.nullable().default(null),
+} as const;
+
+export const DocumentInputSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("create"),
+    ...DocumentWriteFields,
+  }).strict(),
+  z.object({
+    action: z.literal("create_from_template"),
+    template_path: AbsoluteLocalPathSchema,
+    ...DocumentWriteFields,
+  }).strict(),
+  z.object({
+    action: z.literal("open"),
+    path: AbsoluteLocalPathSchema,
+    ...DocumentWriteFields,
+  }).strict(),
+  z.object({
+    action: z.literal("save"),
+    map_id: z.string().min(1).max(512),
+    expected_content_revision: z.int().nonnegative(),
+    expected_file_revision: FileRevisionSchema,
+    ...DocumentWriteFields,
+  }).strict(),
+  z.object({
+    action: z.literal("save_as"),
+    map_id: z.string().min(1).max(512),
+    path: AbsoluteLocalPathSchema,
+    expected_content_revision: z.int().nonnegative(),
+    expected_file_revision: FileRevisionSchema,
+    ...DocumentWriteFields,
+  }).strict(),
+  z.object({
+    action: z.literal("close"),
+    map_id: z.string().min(1).max(512),
+    close_mode: z.enum(["save_then_close", "discard_then_close", "cancel"]),
+    expected_content_revision: z.int().nonnegative(),
+    expected_file_revision: FileRevisionSchema,
+    ...DocumentWriteFields,
+  }).strict(),
+  z.object({
+    action: z.literal("revert"),
+    map_id: z.string().min(1).max(512),
+    expected_content_revision: z.int().nonnegative(),
+    expected_file_revision: z.string().regex(/^[a-f0-9]{64}$/),
+    ...DocumentWriteFields,
+  }).strict(),
+]);
+
+export type DocumentInput = z.infer<typeof DocumentInputSchema>;
+
+export const ExportInputSchema = z.object({
+  map_id: z.string().min(1).max(512),
+  scope: z.literal("map").default("map"),
+  root_node_id: z.literal(null).default(null),
+  format_id: z.enum(["png", "pdf", "svg", "html"]),
+  destination: AbsoluteLocalPathSchema,
+  expected_content_revision: z.int().nonnegative(),
+  overwrite: z.boolean().default(false),
+  dry_run: z.boolean().default(true),
+  idempotency_key: z.uuid(),
+  options: z.object({}).strict().default({}),
+  confirmation: ConfirmationSchema.nullable().default(null),
+}).strict();
+
+export type ExportInput = z.infer<typeof ExportInputSchema>;
 
 export const TOOL_NAMES = [
   "freeplane_status",

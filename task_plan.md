@@ -19,8 +19,8 @@ Implement the frozen Freeplane MCP specification sequentially, keeping every unq
 | 7. v0.1 read-only real-time MCP | complete | Live list/read/selection/search/changes tools, file fallback, reconnect/full-resync, and 5,000-node latency gates pass |
 | 8. v0.2 core atomic editing | complete | Qualified create/update/move/connector/fold/delete/undo/redo tools are one undo unit with zero partial writes |
 | 9. v0.3 knowledge organization and style | complete | Qualified style/layout/summary/clone/filter/formula/reminder subset passes the 35-node/33-relation reconstruction gate |
-| 10. v0.4 document lifecycle, export, and protection | in_progress | Qualified lifecycle/export/encryption/file-write routes pass conflict, artifact, XXE, and unknown-XML preservation gates |
-| 11. v0.5 menu and macOS Accessibility | pending | Allow-listed GUI-only capabilities pass bilingual, focus, dialog-cancel, and postcondition qualification |
+| 10. v0.4 document lifecycle, export, and protection | complete | Qualified lifecycle/export/encryption/file-write routes pass conflict, artifact, XXE, and unknown-XML preservation gates |
+| 11. v0.5 menu and macOS Accessibility | in_progress | Allow-listed GUI-only capabilities pass bilingual, focus, dialog-cancel, and postcondition qualification |
 | 12. v1.0 local stable release | pending | Installer/uninstaller, diagnostics, recovery, compatibility matrix, docs, and complete qualification package pass clean-profile and restart gates |
 
 ## Locked decisions
@@ -60,4 +60,14 @@ Implement the frozen Freeplane MCP specification sequentially, keeping every unq
 
 ## Current gate
 
-v0.0A through v0.3 passed on the frozen Freeplane 1.13.3 build. Current gate: v0.4 document lifecycle, export, and protection. The v0.3 server exposes exactly nine tools; executable conditional styles, raw CSS/scripts, document writes, export, and GUI automation remain unavailable.
+v0.0A through v0.4 passed on the frozen Freeplane 1.13.3 build. Current gate: v0.5 menu and macOS Accessibility. The v0.4 server exposes exactly eleven tools; node encryption, executable conditional styles, raw CSS/scripts, and GUI automation remain unavailable.
+
+## v0.4 high-risk execution boundary
+
+- Goal: qualify revision-guarded document lifecycle, map-scope PNG/PDF/SVG/HTML export, and lexical closed-file text updates without risking user files.
+- Scope: isolated Freeplane `-U` profiles and allowlisted temporary directories only during qualification; production calls require explicit allowed roots.
+- Minimal routes: public lifecycle methods with deterministic internal default-template resolution, frozen internal export engines selected by stable implementation ID, and ordinary-node `TEXT` lexical patches only.
+- Blast radius controls: no user profile, no user map, no arbitrary XML serialization, no symlink following, no raw action keys, no passwords in MCP input.
+- Verification: conflict/confirmation/idempotency tests, artifact magic/dimensions/page count/parsing, XXE matrix, unknown-token byte equality, xattr preservation, backup evidence, save/reopen hashes, and isolated cleanup.
+- Rollback: file patches keep original/candidate/manifest backups before same-directory replacement; export writes stage to a random sibling path before validation and rename.
+- Explicit cut: node encryption remains unsupported until a qualified secret-input channel exists; ordinary MCP password fields are forbidden by the frozen specification.

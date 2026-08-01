@@ -10,6 +10,10 @@ const MAX_ENTRIES = 10_000;
 const MAX_AGE_MS = 24 * 60 * 60 * 1_000;
 
 export function applyPayloadHash(input: ApplyInput): string {
+  return writePayloadHash(input);
+}
+
+export function writePayloadHash(input: { confirmation?: unknown; idempotency_key?: unknown; [key: string]: unknown }): string {
   const { confirmation: _confirmation, idempotency_key: _key, ...payload } = input;
   return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 }
@@ -189,6 +193,7 @@ export class ConfirmationStore {
     binding: ConfirmationBinding,
     plan: { planId: string; planHash: string; expiresAt: string },
     effects: Array<{ kind: string; count: number }>,
+    prompt?: string,
   ) {
     const confirmationId = `fpconfirm:${randomUUID()}`;
     const expiresAt = Math.min(Date.parse(plan.expiresAt), Date.now() + 5 * 60 * 1_000);
@@ -200,7 +205,7 @@ export class ConfirmationStore {
       map_id: binding.mapId,
       bound_revision: binding.contentRevision,
       effects,
-      prompt: `This operation will delete ${effects.reduce((sum, effect) => sum + effect.count, 0)} item(s) and can be restored with one undo.`,
+      prompt: prompt ?? `This operation will delete ${effects.reduce((sum, effect) => sum + effect.count, 0)} item(s) and can be restored with one undo.`,
     };
   }
 

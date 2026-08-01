@@ -93,3 +93,12 @@
 - Swing component bounds measured a worst section-heading overlap ratio of 0.16 after native spacing adjustment, below the 0.20 severe-overlap gate.
 - Conditional-style expressions, raw CSS, reminder scripts, and arbitrary formulas remain explicitly unsupported rather than being passed through as executable strings.
 - Version qualification is aggregate: a v0.3 capability downgrade removes the organization tool and makes `qualification_passed=false`; literal-filter activity is read from Freeplane's native filter controller rather than inferred from the requested action.
+
+## v0.4 implementation evidence
+
+- The MCP surface is exactly eleven tools: the v0.3 surface plus `freeplane_document` and `freeplane_export`; v0.4 qualification is aggregate over inherited read, write, organization, and document capabilities.
+- Lifecycle qualification covers deterministic chooser-free create, create from template, open, save, confirmed save-as overwrite, cancel, confirmed save-then-close, confirmed discard-then-close, and confirmed revert with registry and file-hash readback.
+- Native PNG/PDF/SVG/static-HTML exporters are selected by stable implementation identity. Vector output waits for bounded stable completion; every staged artifact is format-checked, hashed, and atomically published, with a durable backup before overwrite.
+- Closed-file writeback accepts only ordinary-node `TEXT` changes on configured files not open in Freeplane. The final gate preserved BOM, comments, namespaces, unknown attributes/elements, xattrs, and every byte outside the selected values while retaining original/candidate/manifest backups.
+- The hostile matrix rejects DTD/XXE, symlinks, and outside-root paths before Freeplane. Node encryption remains `unsupported` because ordinary MCP parameters are not a secure secret-input channel.
+- The final isolated gate passed 26/26 checks and preserved the pre-existing Freeplane PID 43117 exactly.

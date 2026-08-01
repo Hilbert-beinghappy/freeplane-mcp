@@ -91,7 +91,7 @@ export class BridgeClient {
     this.discovery = safeDiscovery;
   }
 
-  async request(method: "GET" | "POST", endpoint: string, body?: unknown): Promise<unknown> {
+  async request(method: "GET" | "POST", endpoint: string, body?: unknown, timeoutMs = this.timeoutMs): Promise<unknown> {
     let response: Response;
     try {
       response = await fetch(`http://127.0.0.1:${this.discovery.port}${endpoint}`, {
@@ -102,7 +102,7 @@ export class BridgeClient {
           ...(method === "POST" ? { "Content-Type": "application/json" } : {}),
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-        signal: AbortSignal.timeout(this.timeoutMs),
+        signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (error) {
       throw new BridgeClientError(
