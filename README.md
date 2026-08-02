@@ -1,5 +1,7 @@
 # Freeplane MCP
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Local-first MCP integration for the exact qualified Freeplane 1.13.3 build on Apple Silicon macOS.
 
 The v1.0 local-stable surface has twelve goal-level tools for live reads, revisioned changes, atomic editing/history, knowledge organization, document lifecycle, verified export, limited closed-file text writeback, and allowlisted presentation/print-preview control. Raw action keys, arbitrary scripts or shell commands, coordinates, public listeners, uploads, automatic Git/GitHub actions, destructive imports, encryption, and final printing are unavailable.
