@@ -36,6 +36,10 @@ public final class BridgeSelfTest {
         assert !TransactionEngine.validArithmeticFormula("=node.text");
         assert !TransactionEngine.validArithmeticFormula("=(1 + 2");
         assert !TransactionEngine.validArithmeticFormula("=1++2");
+        assert TransactionEngine.richTextEquals("", null);
+        assert TransactionEngine.richTextEquals("", "");
+        assert TransactionEngine.richTextEquals("details", "details");
+        assert !TransactionEngine.richTextEquals("details", null);
 
         String cursor = BridgeSupport.cursor("instance", 42);
         assert BridgeSupport.decodeCursor(cursor, "instance") == 42;

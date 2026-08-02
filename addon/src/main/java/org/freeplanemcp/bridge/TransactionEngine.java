@@ -621,13 +621,15 @@ final class TransactionEngine {
                 Node node = resolve(state, operation.path("node").textValue(), temporary);
                 String value = operation.path("value").textValue();
                 node.setDetails(value);
-                require(node.getDetails() != null && value.equals(node.getDetails().getPlain()), "set_details readback diverged");
+                var actual = node.getDetails();
+                require(richTextEquals(value, actual == null ? null : actual.getPlain()), "set_details readback diverged");
             }
             case "set_note" -> {
                 Node node = resolve(state, operation.path("node").textValue(), temporary);
                 String value = operation.path("value").textValue();
                 node.setNote(value);
-                require(node.getNote() != null && value.equals(node.getNote().getPlain()), "set_note readback diverged");
+                var actual = node.getNote();
+                require(richTextEquals(value, actual == null ? null : actual.getPlain()), "set_note readback diverged");
             }
             case "set_attribute" -> {
                 Node node = resolve(state, operation.path("node").textValue(), temporary);
@@ -1244,6 +1246,10 @@ final class TransactionEngine {
             }
         }
         return !expectValue && depth == 0;
+    }
+
+    static boolean richTextEquals(String expected, String actual) {
+        return expected.equals(actual == null ? "" : actual);
     }
 
     private static boolean requireBoolean(JsonNode object, String field) {
